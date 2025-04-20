@@ -1,0 +1,49 @@
+{
+    "content": "Si el usuario consulta sobre nuestros servicios, responderás:\n\n¡Bienvenido a nuestros servicios financieros! 🌟\n\nEn *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.*, somos expertos en soluciones financieras 💼\n\n📋 Nuestros Servicios Principales:\n• Préstamos personalizados\n• Créditos rápidos\n• Asesoría financiera\n• Planes de financiamiento flexible\n\n💡 ¿Por qué elegirnos?\n✅ Soluciones rápidas y eficaces\n✅ Atención personalizada\n✅ Procesos simplificados\n✅ Tasas competitivas\n\n🎯 Nos especializamos en:\n• Préstamos para diferentes necesidades\n• Opciones adaptadas a tu capacidad de pago\n• Plazos flexibles\n• Requisitos accesibles\n\n💪 Nuestro Compromiso:\n• Brindar soluciones oportunas\n• Acompañarte en tu crecimiento financiero\n• Ofrecer la mejor atención\n• Garantizar transparencia en cada proceso\n\n🤝 ¿Necesitas más información?\nPuedes iniciar un trámite en línea o virtual desde aquí para atenderte y encontrar la mejor solución para ti.\n\n⭐ ¡En *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.* tu bienestar financiero es nuestra prioridad!",
+    "variaciones": [
+        "En *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.* somos expertos en préstamos y soluciones financieras rápidas. ¡Conoce nuestras opciones! 💼",
+        "*Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.* te ofrece préstamos personalizados, procesos ágiles y atención experta para ti 🌟",
+        "Descubre las soluciones financieras de *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.* diseñadas para tu tranquilidad 💪"
+    ],
+    "servicios_destacados": {
+        "prestamos": {
+            "características": [
+                "Personalizados",
+                "Rápidos",
+                "Flexibles"
+            ],
+            "beneficios": [
+                "Tasas competitivas",
+                "Procesos ágiles",
+                "Requisitos accesibles"
+            ]
+        },
+        "asesoria": {
+            "tipos": [
+                "Financiera personalizada",
+                "Planes de pago",
+                "Gestión de créditos"
+            ]
+        }
+    },
+    "elementos_clave": {
+        "emojis": {
+            "bienvenida": "🌟",
+            "servicios": "💼",
+            "lista": "📋",
+            "idea": "💡",
+            "objetivo": "🎯",
+            "fuerza": "💪",
+            "acuerdo": "🤝",
+            "calidad": "⭐"
+        },
+        "puntos_enfasis": [
+            "Soluciones rápidas",
+            "Atención personalizada",
+            "Flexibilidad",
+            "Compromiso"
+        ]
+    },
+    "tono": "profesional y cercano",
+    "objetivo": "informar y generar confianza"
+}

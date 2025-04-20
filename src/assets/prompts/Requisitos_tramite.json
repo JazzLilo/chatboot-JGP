@@ -1,0 +1,32 @@
+{
+    "content": "Si el usuario pregunta sobre el tramite, decir: Para iniciar tu trámite virtual en *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.* debes contar con los siguientes requisitos: 📋\n\n1️⃣ *Nombre Completo* 📝\nTu nombre tal como aparece en tu documento oficial.\n\n2️⃣ *Cédula de Identidad* 🆔\nIncluye el número y el lugar de expedición.\n\n3️⃣ *Correo Electrónico* 📧\nAsegúrate de proporcionar un correo válido para notificaciones.\n\n4️⃣ *Dirección de tu domicilio* 🏠\nIncluye detalles claros para una correcta localización.\n\n5️⃣ *Monto solicitado* 💵\nEl monto debe estar entre *2000 Bs. y 8000 Bs.*\n\n6️⃣ *Meses a pagar el monto* 📆\nSelecciona un plazo entre *1 y 24 meses* según tu capacidad de pago.\n\n✅ Una vez que tengas todo listo, en *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.* estaremos encantados de atenderte y ayudarte a dar el siguiente paso hacia tu objetivo financiero.",
+    "variaciones": [
+        "Para tu trámite en *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.* necesitas nombre, CI, correo, dirección, monto (2000-8000 Bs) y plazo de pago. 📋 ¡Es fácil! 💪",
+        "Proporciona a *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.* tu nombre, CI, correo, dirección, monto (entre 2000 y 8000 Bs) y plazo de pago. Estamos listos para ayudarte. ✅",
+        "Para iniciar en *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.*: Nombre completo, CI, correo, dirección, monto (2000-8000 Bs) y meses de pago. Fácil y rápido para ti. 🚀"
+    ],
+    "secciones": {
+        "requisitos_principales": [
+            "Nombre completo",
+            "Cédula de identidad",
+            "Correo electrónico",
+            "Dirección de domicilio",
+            "Monto solicitado (2000-8000 Bs)",
+            "Meses a pagar el monto"
+        ],
+        "rangos": {
+            "monto": "2000-10000 Bs",
+            "meses": "1-17 meses"
+        }
+    },
+    "palabras_clave": [
+        "requisitos",
+        "trámite",
+        "documentación",
+        "monto solicitado",
+        "plazo de pago",
+        "inicio de trámite"
+    ],
+    "tono": "profesional y accesible",
+    "formato": "estructurado con emojis para claridad y mejor visualización"
+}

@@ -1,0 +1,39 @@
+{
+    "content": "Para iniciar el trámite virtual, necesito confirmar: ¿Eres asalariado?",
+    "variaciones": [
+        "¿Eres asalariado actualmente?",
+        "Para comenzar, ¿tienes un trabajo en relación de dependencia?",
+        "¿Trabajas como empleado asalariado?"
+    ],
+    "tono": {
+        "principal": "amigable y profesional",
+        "caracteristicas": [
+            "cercano",
+            "eficiente",
+            "profesional",
+            "orientado al usuario"
+        ]
+    },
+    "elementos_clave": {
+        "emojis": {
+            "pregunta": "❓",
+            "asalariado": "👔",
+            "empresa": "💼"
+        },
+        "puntos_enfasis": [
+            "Confirmar si es asalariado",
+            "Personalizar información",
+            "Orientación específica"
+        ]
+    },
+    "contexto_uso": {
+        "preguntas_relevantes": [
+            "¿Eres asalariado?",
+            "¿Trabajas en relación de dependencia?",
+            "¿Tienes un trabajo fijo?"
+        ],
+        "primer_contacto": true,
+        "interactivo": true,
+        "orientado_servicio": true
+    }
+}

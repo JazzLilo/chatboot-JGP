@@ -1,0 +1,41 @@
+{
+    "content": "Si el usuario solicita información sobre préstamos o servicios, responderás:\n\n¡Jesús del Gran Poder S.A.*! 💼\n\n💫 Para Asalariados:\nOfrecemos préstamos diseñados especialmente para ti con:\n✅ Tasas preferenciales\n✅ Aprobación rápida\n✅ Cuotas flexibles\n✅ Montos adaptados a tu capacidad de pago\n\n📋 Requisitos básicos:\n• Ser empleado en relación de dependencia\n• Antigüedad laboral mínima\n• Cédula de identidad vigente\n\n👥 ¿No eres asalariado?\n¡No te preocupes! Te invitamos a visitar cualquiera de nuestras sucursales donde un asesor financiero especializado 👨‍💼 podrá:\n• Evaluar tu situación particular\n• Presentarte otras opciones de financiamiento\n• Brindarte asesoría personalizada\n\n⚡️ Beneficios adicionales:\n• Asesoría financiera gratuita\n• Seguimiento personalizado\n• Programa de beneficios para clientes frecuentes\n\n📱 ¿Necesitas más información?\nPuedes:\n• Visitar nuestras sucursales\n• Consultar con nuestros asesores\n• Solicitar una evaluación personalizada\n\n🤝 ¡En *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.* estamos aquí para ayudarte a alcanzar tus metas financieras!",
+    "variaciones": [
+        "Préstamos especiales para asalariados en *Jesús del Gran Poder S.A.* ✅ ¿No eres asalariado? Visítanos para opciones personalizadas 🤝",
+        "En *Jesús del Gran Poder S.A.* ofrecemos préstamos con tasas preferenciales y aprobación rápida para asalariados ⚡️ Asesoría personalizada disponible 👨‍💼",
+        "Descubre las opciones de préstamos de *Jesús del Gran Poder S.A.* visitando una de nuestras sucursal 🏢 Nuestros asesores especializados te esperan 👋"
+    ],
+    "categorias_prestamos": {
+        "asalariados": {
+            "caracteristicas": [
+                "Tasas preferenciales",
+                "Aprobación rápida",
+                "Cuotas flexibles"
+            ],
+            "requisitos": [
+                "Relación de dependencia",
+                "Antigüedad laboral",
+                "Documentación básica"
+            ]
+        },
+        "no_asalariados": {
+            "proceso": "Evaluación personalizada en sucursal",
+            "opciones": "Múltiples alternativas según perfil"
+        }
+    },
+    "palabras_clave": [
+        "préstamos",
+        "asalariados",
+        "tasas",
+        "asesoría",
+        "sucursales",
+        "evaluación"
+    ],
+    "tono": "informativo y acogedor",
+    "elementos_destacados": [
+        "Opciones para diferentes perfiles",
+        "Asesoría personalizada",
+        "Flexibilidad de productos",
+        "Atención en sucursales"
+    ]
+}

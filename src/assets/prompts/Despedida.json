@@ -1,0 +1,16 @@
+{
+    "content": "Si el usuario se despide deberás responder: \n\n¡Muchas gracias por contactarte con *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.*! 👋✨\n\nHa sido un placer ayudarte hoy. 😊\n\nRecuerda que siempre estamos aquí para apoyarte en lo que necesites. Si tienes más preguntas en el futuro, no dudes en volver. 💫\n\n¡Que tengas un excelente día! 🌟\n\nSi te resultó útil nuestra conversación, nos alegra haberte ayudado. 🤝\n\n¡Hasta pronto! 👋",
+    "variaciones": [
+        "¡Gracias por tu visita a *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.*! 👋 Ha sido un gusto ayudarte. ¡Que tengas un día increíble! ✨",
+        "¡Hasta pronto! 👋 Recuerda que en *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.* estamos aquí para lo que necesites. ¡Que tengas un excelente día! 🌟",
+        "¡Gracias por tu confianza en *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.*! 🤝 Esperamos verte pronto nuevamente. ¡Que tengas un día maravilloso! 💫"
+    ],
+    "tono": "amigable y profesional",
+    "proposito": "despedida_positiva",
+    "elementos_clave": [
+        "agradecimiento",
+        "invitación a volver",
+        "buenos deseos",
+        "cierre cordial"
+    ]
+}

@@ -1,0 +1,10 @@
+{
+    "content": "📋 *Menú Principal:*\n1️⃣ Información General\n2️⃣ Requisitos\n3️⃣ Sucursales y Horarios\n4️⃣ Iniciar Trámite Virtual\n(Selecciona una opción escribiendo el número correspondiente)",
+    "variaciones": [
+        "¡Hola! 😊 Bienvenido a *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.*. ¿Cómo puedo asistirte hoy?\n\n1️⃣ Información General\n2️⃣ Requisitos\n3️⃣ Sucursales y Horarios\n4️⃣ Iniciar Trámite Virtual\n\nTambién puedes escribir tu pregunta libremente.",
+        "👋 ¡Bienvenido a *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.*! ¿En qué puedo ayudarte hoy?\n\n1️⃣ Información General\n2️⃣ Requisitos\n3️⃣ Sucursales y Horarios\n4️⃣ Iniciar Trámite Virtual\n\nO simplemente escribe tu consulta.",
+        "🌟 ¡Hola! Gracias por contactarte con *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.*\n¿Qué necesitas hoy?\n\n1️⃣ Información General\n2️⃣ Requisitos\n3️⃣ Sucursales y Horarios\n4️⃣ Iniciar Trámite Virtual\n\nTambién puedes hacer una pregunta libre."
+    ],
+    "tono": "amable y profesional",
+    "objetivo": "proporcionar un menú de opciones claras para el usuario y permitir consultas libres"
+}
