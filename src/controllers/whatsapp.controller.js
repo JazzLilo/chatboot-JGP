@@ -88,7 +88,9 @@ export const saveMessage = async (req, res) => {
         userStates[sender].state,
         userStates[sender].data,
         sender,
-        message
+        message,
+        userStates,
+        prompts
       );
       return res.json({ reply: `${respuesta}` });
     } else if (userStates[sender] && userStates[sender].state !== "finished") {

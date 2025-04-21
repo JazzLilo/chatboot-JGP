@@ -24,11 +24,11 @@
     ]
   },
   "prestamos": {
-    "content": "Si el usuario pregunta sobre préstamos, responderás:\n\n Presteneces al sector asalariado, entonces puedes ver la Informacion sobre el credito al asalariado, Requisitos para el credito al asalariado, Iniciar Tramite Virtual. \n\nSi no eres asalariado, Los creditos que ofrecemos a los clientes no asalariados son los siguientes: Credito Regular Credito Oportuno Credito Interinstitucional",
+    "content": "💰 *Información sobre Préstamos en Jesús del Gran Poder S.A.* 🏦\n\nQueremos ayudarte a encontrar la mejor opción financiera para ti.\n\n👔 *¿Eres asalariado?*\nPor favor responde con una de las siguientes opciones:\n\n1️⃣ *Sí, soy asalariado* – Consulta:\n• ℹ️ Información sobre el crédito al asalariado\n• 📋 Requisitos para el crédito\n• 🖥️ Iniciar Trámite Virtual\n\n2️⃣ *No, no soy asalariado* – ¡No te preocupes! También contamos con:\n• 💼 Créditos regulares\n• ⏱️ Créditos oportunos\n• 🤝 Créditos interinstitucionales\n\nPor favor, responde con *1* o *2* para continuar.",
     "variaciones": [
-      "Si eres asalariado, puedes acceder a nuestros préstamos personales. Si no eres asalariado, ofrecemos créditos regulares, oportunos e interinstitucionales.",
-      "Los préstamos personales son para asalariados. Si no lo eres, consulta por nuestros créditos regulares, oportunos e interinstitucionales.",
-      "Si trabajas en relación de dependencia, puedes optar por nuestros préstamos personales. Si no, tenemos créditos regulares, oportunos e interinstitucionales."
+      "👔 Si eres asalariado, puedes acceder a nuestros préstamos personales. Si no lo eres, también tenemos opciones adaptadas a tu situación.",
+      "🏦 Ofrecemos préstamos para asalariados y otras alternativas para quienes no lo son. Responde para saber más.",
+      "ℹ️ ¿Eres asalariado? Elige entre nuestros créditos diseñados para ti. Si no, conoce nuestras otras opciones financieras."
     ],
     "tono": "informativo y profesional",
     "elementos_clave": {
@@ -167,12 +167,7 @@
     }
   },
   "informacion_prestamos_asalariados": {
-    "content": "Si el usuario solicita información sobre préstamos o servicios:\n\n¡Jesús del Gran Poder S.A.*! 💼\n\n💫 Para Asalariados:\nOfrecemos préstamos diseñados especialmente para ti con:\n✅ Tasas preferenciales\n✅ Aprobación rápida\n✅ Cuotas flexibles\n✅ Montos adaptados a tu capacidad de pago\n\n📋 Requisitos básicos:\n• Ser empleado en relación de dependencia\n• Antigüedad laboral mínima\n• Cédula de identidad vigente\n\n👥 ¿No eres asalariado?\n¡No te preocupes! Te invitamos a visitar cualquiera de nuestras sucursales donde un asesor financiero especializado 👨‍💼 podrá:\n• Evaluar tu situación particular\n• Presentarte otras opciones de financiamiento\n• Brindarte asesoría personalizada\n\n⚡️ Beneficios adicionales:\n• Asesoría financiera gratuita\n• Seguimiento personalizado\n• Programa de beneficios para clientes frecuentes\n\n📱 ¿Necesitas más información?\nPuedes:\n• Visitar nuestras sucursales\n• Consultar con nuestros asesores\n• Solicitar una evaluación personalizada\n\n🤝 ¡En *Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.* estamos aquí para ayudarte a alcanzar tus metas financieras!",
-    "variaciones": [
-      "Préstamos especiales para asalariados en *Jesús del Gran Poder S.A.* ✅ ¿No eres asalariado? Visítanos para opciones personalizadas 🤝",
-      "En *Jesús del Gran Poder S.A.* ofrecemos préstamos con tasas preferenciales y aprobación rápida para asalariados ⚡️ Asesoría personalizada disponible 👨‍💼",
-      "Descubre las opciones de préstamos de *Jesús del Gran Poder S.A.* visitando una de nuestras sucursal 🏢 Nuestros asesores especializados te esperan 👋"
-    ],
+    "content": "🙋‍♂️ *¡Bienvenido a Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.!* 💼\n\n💫 *Créditos para Asalariados:*\nPensados especialmente para quienes cuentan con empleo formal, nuestros préstamos ofrecen:\n✅ *Tasas preferenciales*\n✅ *Aprobación rápida*\n✅ *Cuotas flexibles*\n✅ *Montos ajustados a tu capacidad de pago*\n\n📋 *Menú de opciones:*\n1️⃣ *Información sobre el crédito al asalariado*\n2️⃣ *Requisitos para el crédito al asalariado*\n3️⃣ *Iniciar Trámite Virtual*\n\n✍️ Por favor, responde con el número de la opción que deseas.",
     "categorias_prestamos": {
       "asalariados": {
         "caracteristicas": [

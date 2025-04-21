@@ -204,7 +204,9 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
               userStates[id].state,
               userStates[id].data,
               id,
-              "documentos_completos"
+              "documentos_completos",
+              userStates,
+              prompts
             );
             await sock.sendMessage(id, { text: respuesta });
           }
@@ -252,7 +254,7 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
               return;
             }
             case 4: {
-              const reply = await handleVirtualApplication(id, mensaje);
+              const reply = await handleVirtualApplication(id, mensaje, userStates, prompts);
               await sock.sendMessage(id, { text: reply });
               logConversation(id, reply, "bot");
               return;
@@ -267,7 +269,7 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
         } else {
           // Texto libre
           const intent = await classifyIntent(mensaje);
-          const respuesta = await generateResponse(intent, mensaje, id);
+          const respuesta = await generateResponse(intent, mensaje, id, prompts, userStates);
           await sock.sendMessage(id, { text: respuesta });
           logConversation(id, respuesta, "bot");
         }
@@ -277,7 +279,7 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
       // Manejo de estados del trámite
       if (userStates[id].state !== "finished") {
         if (isInApplicationProcess(userStates,id)) {
-          const respuesta = await handlers.continueVirtualApplication(userStates[id].state, userData, id, mensaje); // Modificamos esta línea
+          const respuesta = await handlers.continueVirtualApplication(userStates[id].state, userData, id, mensaje, userStates, prompts); // Modificamos esta línea
           await sock.sendMessage(id, { text: respuesta });
           logConversation(id, respuesta, "bot");
         } else {

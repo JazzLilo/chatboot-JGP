@@ -11,3 +11,4 @@ export const resetUserState = (userStates, sender, message = null) => {
   delete userStates[sender].current_document;
   return message ? `${message}\n\n${contentMenu}` : `${contentMenu}`;
 }
+

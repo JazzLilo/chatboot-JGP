@@ -2,26 +2,24 @@ import dotenv from 'dotenv'
 import express from 'express'
 import cors from "cors";
 import fs from "fs";
-import { writeFile, rename } from 'fs/promises';
-import path from "path";
 import { readFile } from 'fs/promises';
 import { PORT } from './config/index.js';
-import { DOCUMENT_TYPES, MAX_CANCEL_ATTEMPTS } from './utils/constant.js'
+import { MAX_CANCEL_ATTEMPTS } from './utils/constant.js'
 import { calculateMonthlyFee, classifyYesNo, getRandomVariation } from './config/utils.js'
 import { validateEmail, isInApplicationProcess } from './utils/validate.js'
-import { ApplicationData, insertSolicitud, insertFileLocation } from './controllers/tratamientoBD.js'
+import { ApplicationData } from './controllers/tratamientoBD.js'
 import { connectToWhatsApp, getDocumentPrompt, } from './controllers/conexionBaileys.js'
 import { classifyIntent } from './controllers/gemini.controller.js';
 import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained } from './utils/message.js';
 import indexRouter from './routes/index.routes.js'
-import { createSessionDirectory } from './controllers/session.controller.js';
 import directoryManager from './config/directory.js';
-import { generateApplicationContent, showVerification } from './utils/generate.js';
+import { showVerification } from './utils/generate.js';
 import { map } from './utils/prompt.js';
 import { resetUserState } from './controllers/user.controller.js';
 import { logConversation } from './utils/logger.js'
-import { handleUserMessage } from './controllers/conversation.controller.js'
 import { saveApplicationData } from './controllers/user.data.controller.js';
+import { handleUserMessage } from './controllers/conversation.controller.js'
+//import { continueVirtualApplication, generateResponse,  handleUserMessage, handleVirtualApplication } from './controllers/conversation.controller.js'
 
 dotenv.config();
 
@@ -98,8 +96,6 @@ async function handleCancel(sender) {
   return `${messageCancelFull} \n\n${contentMenu}`;
 }
 
-
-
 // ------------ MANEJO DEL FLUJO DEL TRÁMITE VIRTUAL -----------
 export const handleVirtualApplication = async (sender, userMessage) => {
   // Si NO está en trámite, inicializamos
@@ -149,8 +145,8 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       } else if (respuesta === false) {
 
         const message = `❌ Lo sentimos, por ahora solo prestamos para asalariados. Aquí tienes más información:\n\n${getRandomVariation(prompts["requisitos"])}`;
-
-        return resetUserState(sender, message)
+        userStates[sender].state = "INIT";
+        return message ? `${message}\n\n` : `${contentMenu}`;
       } else {
         userStates[sender].retries += 1;
         if (userStates[sender].retries >= 3) {
