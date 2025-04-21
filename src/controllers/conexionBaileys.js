@@ -135,7 +135,13 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
         await sock.sendMessage(id, { text: initialMenu });
         logConversation(id, initialMenu, "bot");
         return;
-      }
+      } else if (userStates[id].state === "baned") {
+        // Usuario baneado: No permitir acceso
+        const mensajeBloqueo = "❌ Has alcanzado el límite de intentos de cancelación.";
+        await sock.sendMessage(id, { text: mensajeBloqueo });
+        logConversation(id, mensajeBloqueo, "bot");
+        return;
+      } 
 
       const userState = userStates[id].state;
       const userData = userStates[id].data;
@@ -287,7 +293,12 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
           await sock.sendMessage(id, { text: respuesta });
           logConversation(id, respuesta, "bot");
         }
-      } else {
+      }else if (userStates[id].state === "baned") {
+        const respuesta = `⏳ Has alcanzado el límite de intentos de cancelación, intente en unos minutos.`;
+        await sock.sendMessage(id, { text: respuesta });
+        logConversation(id, respuesta, "bot");
+
+      }else {
         const waitMessage = `⏳ El chatbot se está reiniciando y no puede procesar nuevos mensajes ahora. Por favor, espera 5 minutos antes de intentar nuevamente.`;
         await sock.sendMessage(id, { text: waitMessage });
         logConversation(id, waitMessage, "bot");

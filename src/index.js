@@ -18,7 +18,7 @@ import { map } from './utils/prompt.js';
 import { resetUserState } from './controllers/user.controller.js';
 import { logConversation } from './utils/logger.js'
 import { saveApplicationData } from './controllers/user.data.controller.js';
-import { handleUserMessage } from './controllers/conversation.controller.js'
+import { handleUserMessage, handleCancel } from './controllers/conversation.controller.js'
 //import { continueVirtualApplication, generateResponse,  handleUserMessage, handleVirtualApplication } from './controllers/conversation.controller.js'
 
 dotenv.config();
@@ -63,57 +63,58 @@ const generateResponse = (intent, userMessage, sender) => {
     },
     requisitos_tramite: () => getRandomVariation(prompts.requisitos_tramite),
     chatbot: () => getRandomVariation(prompts.chatbot),
-    cancelar: () => handleCancel(sender)
+    cancelar: () => handleCancel(sender, userStates)
   };
-
   // Obtener el handler o usar el default
   const handler = responseHandlers[intent] ||
     (() => getRandomVariation(prompts.otra_informacion));
 
   let baseResponse = handler();
+  console.log(`Intento: ${intent}, Respuesta: ${baseResponse}`, state  );
   // Añadir menú si no está en proceso de trámite
   if (!userStates[sender]) baseResponse = `${baseResponse}\n${contentMenu}`;
   const { in_application, state } = userStates[sender] || {};
   if (!in_application && state === "finished") {
     baseResponse = `${baseResponse}\n${contentMenu}`;
   }
+  // Añadir mensaje de cancelación si se ha cancelado el trámite
+  if (!in_application && state ===  "baned") {
+    baseResponse = `${baseResponse}\n${messageCancelFull}`;
+  }
+
 
   return baseResponse;
 }
 
-// ------------ FUNCIÓN PARA MANEJAR LA CANCELACIÓN -----------
-async function handleCancel(sender) {
-  if (!userStates[sender]) return `${messageNotTrained} \n\n${contentMenu}`;
 
-  const { cancelAttempts } = userStates[sender];
-
-  if (cancelAttempts) userStates[sender].cancelAttempts = 0;
-  userStates[sender].cancelAttempts += 1;
-  if (cancelAttempts > MAX_CANCEL_ATTEMPTS) return messageCancel;
-
-  resetUserState(sender, messageCancelSuccess);
-
-  return `${messageCancelFull} \n\n${contentMenu}`;
-}
 
 // ------------ MANEJO DEL FLUJO DEL TRÁMITE VIRTUAL -----------
 export const handleVirtualApplication = async (sender, userMessage) => {
-  // Si NO está en trámite, inicializamos
   if (!isInApplicationProcess(userStates, sender)) {
+    const previousCancelAttempts = userStates[sender]?.cancelAttempts || 0;
+
     userStates[sender] = {
       state: "verificar_asalariado",
       data: new ApplicationData(),
       in_application: true,
-      cancelAttempts: 0, // Inicializar contador de cancelaciones
-      timeout: setTimeout(() => {
+      cancelAttempts: previousCancelAttempts,
+      timeoutFinish: setTimeout(() => {
         userStates[sender].state = "finished";
         userStates[sender].in_application = false;
-        delete userStates[sender].timeout;
-      }, 30 * 60 * 1000), // 30 minutos de inactividad
+        delete userStates[sender].timeoutFinish;
+      }, 5 * 60 * 1000), // Finaliza trámite por inactividad (5 min)
+
+      timeoutBan: setTimeout(() => {
+        if (userStates[sender].cancelAttempts >= MAX_CANCEL_ATTEMPTS) {
+          userStates[sender].state = "baned";
+          userStates[sender].in_application = false;
+        }
+        delete userStates[sender].timeoutBan;
+      }, 1 * 60 * 1000), // Banea si excedió cancelaciones (1 min)
     };
+
     return `${getRandomVariation(prompts["tramite_virtual"])} (Responda Sí o No)`;
   } else {
-    // Continúa en el flujo
     return await continueVirtualApplication(
       userStates[sender].state,
       userStates[sender].data,
@@ -121,16 +122,26 @@ export const handleVirtualApplication = async (sender, userMessage) => {
       userMessage
     );
   }
-}
+};
+
 
 
 export const continueVirtualApplication = async (state, data, sender, userMessage) => {
+
+  if (userStates[sender].cancelAttempts >= MAX_CANCEL_ATTEMPTS) {
+    userStates[sender].state = "baned";
+    userStates[sender].in_application = false;
+    delete userStates[sender].timeoutBan;
+    delete userStates[sender].retries;
+    return `❌ Has alcanzado el límite de intentos de cancelación.`;
+  }
+
   // Permite cancelar en cualquier momento
   if (userMessage.toLowerCase().includes("cancelar")) {
-    clearTimeout(userStates[sender].timeout);
-    userStates[sender].state = "finished";
-    userStates[sender].in_application = false;
-    delete userStates[sender].timeout;
+    console.log('UserStates:', userStates);
+    handleCancel(sender, userStates)
+
+    console.log('Cancelación exitosa', userStates);
     return `✅ Has cancelado tu solicitud. Puedes iniciar nuevamente el trámite en cualquier momento.\n\n${contentMenu}`;
   }
 
@@ -363,7 +374,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
             console.log(
               `Estado de usuario ${sender} reiniciado después de 5 minutos.`
             );
-          }, 1 * 60 * 1000); // 5 minutos
+          }, 5 * 60 * 1000); // 5 minutos
 
           return closureMessage;
         } else {

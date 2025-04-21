@@ -1,6 +1,7 @@
 import { contentMenu } from "../utils/message.js";
 
 export const resetUserState = (userStates, sender, message = null) => {
+  
   clearTimeout(userStates[sender]?.timeout);
   userStates[sender].state = "INIT";
   userStates[sender].in_application = false;

@@ -4,7 +4,7 @@ export const saveMessage = async (req, res) => {
     if (!message || !sender) {
       return res.status(400).json({ reply: "Datos incompletos" });
     }
-
+    console.log("Mensaje recibido------------------------------------------------------------------------:", message, sender);
     // 1. Si es la primera vez que escribe, entramos a INIT
     if (!userStates[sender]) {
       userStates[sender] = {

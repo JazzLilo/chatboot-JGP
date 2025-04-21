@@ -9,17 +9,8 @@ import { logConversation } from '../utils/logger.js'
 import { classifyIntent } from '../controllers/gemini.controller.js';
 import { ApplicationData } from '../controllers/tratamientoBD.js'
 import fs from "fs";
-
-async function loadPrompts() {
-  try {
-    const data = await readFile('./src/assets/prompts/prompt.json', 'utf-8');
-    const prompts = JSON.parse(data);
-    return prompts;
-  } catch (error) {
-    console.error('Error al cargar el archivo prompt.json:', error);
-    return null;
-  }
-}
+import { MAX_CANCEL_ATTEMPTS } from '../utils/constant.js'
+import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained } from '../utils/message.js';
 
 export const continueVirtualApplication = async (state, data, sender, userMessage, userStates, prompts) => {
   // Permite cancelar en cualquier momento
@@ -322,17 +313,20 @@ export const generateResponse = async (intent, userMessage, sender, prompts, use
 }
 
 // ------------ FUNCIÓN PARA MANEJAR LA CANCELACIÓN -----------
-async function handleCancel(sender) {
+export const handleCancel = async (sender, userStates) => {
+  console.log(`Manejo de cancelación para el usuario: ${sender}`);
   if (!userStates[sender]) return `${messageNotTrained} \n\n${contentMenu}`;
-
+  
   const { cancelAttempts } = userStates[sender];
-
-  if (cancelAttempts) userStates[sender].cancelAttempts = 0;
-  userStates[sender].cancelAttempts += 1;
+  
+  console.log(`Intentos de cancelación: ${cancelAttempts}`);
+  //if (cancelAttempts) userStates[sender].cancelAttempts = 0;
+  const cancel_count_temp = userStates[sender].cancelAttempts += 1;
   if (cancelAttempts > MAX_CANCEL_ATTEMPTS) return messageCancel;
   userStates[sender].timeout
-  resetUserState(sender, messageCancelSuccess);
-
+  resetUserState(userStates, sender, messageCancelSuccess);
+  userStates[sender].cancelAttempts = cancel_count_temp;
+  console.log(`Estado de usuario ${sender} reiniciado después de ${MAX_CANCEL_ATTEMPTS} intentos de cancelación, cantidad de intentos ${userStates[sender].cancelAttempts}.`);
   return `${messageCancelFull} \n\n${contentMenu}`;
 }
 
