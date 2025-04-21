@@ -1,11 +1,11 @@
 import { ApplicationData } from './tratamientoBD.js'
 import fs from 'fs';
 import path from 'path';
-import { 
-  makeWASocket, 
-  useMultiFileAuthState, 
-  DisconnectReason, 
-  downloadMediaMessage 
+import {
+  makeWASocket,
+  useMultiFileAuthState,
+  DisconnectReason,
+  downloadMediaMessage
 } from "@whiskeysockets/baileys";
 import directoryManager from '../config/directory.js';
 import { isInApplicationProcess } from '../utils/validate.js';
@@ -129,7 +129,7 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
             userStates[id].state = "finished";
             userStates[id].in_application = false;
             delete userStates[id].timeout;
-          }, 30 * 60 * 1000),
+          }, 5 * 60 * 1000),
         };
         const initialMenu = getRandomVariation(prompts["saludo"]) + "\n" + contentMenu;
         await sock.sendMessage(id, { text: initialMenu });
@@ -141,7 +141,7 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
         await sock.sendMessage(id, { text: mensajeBloqueo });
         logConversation(id, mensajeBloqueo, "bot");
         return;
-      } 
+      }
 
       const userState = userStates[id].state;
       const userData = userStates[id].data;
@@ -281,28 +281,36 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
         }
         return;
       }
-     
+
       // Manejo de estados del trámite
-      if (userStates[id].state !== "finished") {
-        if (isInApplicationProcess(userStates,id)) {
-          const respuesta = await handlers.continueVirtualApplication(userStates[id].state, userData, id, mensaje, userStates, prompts); // Modificamos esta línea
-          await sock.sendMessage(id, { text: respuesta });
-          logConversation(id, respuesta, "bot");
-        } else {
-          const respuesta = await handleUserMessage(id, mensaje);
-          await sock.sendMessage(id, { text: respuesta });
-          logConversation(id, respuesta, "bot");
-        }
-      }else if (userStates[id].state === "baned") {
+      if (userStates[id].state === "baned") {
         const respuesta = `⏳ Has alcanzado el límite de intentos de cancelación, intente en unos minutos.`;
         await sock.sendMessage(id, { text: respuesta });
         logConversation(id, respuesta, "bot");
 
-      }else {
-        const waitMessage = `⏳ El chatbot se está reiniciando y no puede procesar nuevos mensajes ahora. Por favor, espera 5 minutos antes de intentar nuevamente.`;
-        await sock.sendMessage(id, { text: waitMessage });
-        logConversation(id, waitMessage, "bot");
+      } else if (userStates[id].state !== "finished") {
+        const enTramite = isInApplicationProcess(userStates, id);
+
+        const respuesta = enTramite
+          ? await handlers.continueVirtualApplication(
+            userStates[id].state,
+            userData,
+            id,
+            mensaje,
+            userStates,
+            prompts
+          )
+          : await handleUserMessage(id, mensaje);
+
+        await sock.sendMessage(id, { text: respuesta });
+        logConversation(id, respuesta, "bot");
+
+      } else {
+        const mensajeEspera = `⏳ El chatbot se está reiniciando y no puede procesar nuevos mensajes ahora. Por favor, espera 5 minutos antes de intentar nuevamente.`;
+        await sock.sendMessage(id, { text: mensajeEspera });
+        logConversation(id, mensajeEspera, "bot");
       }
+
     }
   });
 

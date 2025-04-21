@@ -131,9 +131,27 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
   if (userStates[sender].cancelAttempts >= MAX_CANCEL_ATTEMPTS) {
     userStates[sender].state = "baned";
     userStates[sender].in_application = false;
+  
+    // Limpiar datos antiguos
     delete userStates[sender].timeoutBan;
     delete userStates[sender].retries;
-    return `❌ Has alcanzado el límite de intentos de cancelación.`;
+  
+    // Cambiar estado a 'reen' después de 1 minuto
+    setTimeout(() => {
+      if (userStates[sender] && userStates[sender].state === "baned") {
+        userStates[sender].state = "reen";
+        console.log(`⏱ Estado del usuario ${sender} cambiado a 'reen' tras 1 minuto.`);
+      }
+    }, 1 * 60 * 1000); // 1 minuto
+  
+    // Reiniciar estado completamente después de 5 minutos
+    setTimeout(() => {
+      userStates[sender].cancelAttempts = 0;
+      resetUserState(userStates, sender);
+      console.log(`🔄 Estado del usuario ${sender} reiniciado tras 1 minutos.`);
+    }, 1 * 60 * 1000); // 5 minutos
+  
+    return `❌ Has alcanzado el límite de intentos de cancelación. Intenta nuevamente en unos minutos.`;
   }
 
   // Permite cancelar en cualquier momento
