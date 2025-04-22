@@ -24,11 +24,11 @@
     ]
   },
   "prestamos": {
-    "content": "💰 *Información sobre Préstamos en Jesús del Gran Poder S.A.* 🏦\n\nQueremos ayudarte a encontrar la mejor opción financiera para ti.\n\n👔 *¿Eres asalariado?*\nPor favor responde con una de las siguientes opciones:\n\n1️⃣ *Sí, soy asalariado* – Consulta:\n• ℹ️ Información sobre el crédito al asalariado\n• 📋 Requisitos para el crédito\n• 🖥️ Iniciar Trámite Virtual\n\n2️⃣ *No, no soy asalariado* – ¡No te preocupes! También contamos con:\n• 💼 Créditos regulares\n• ⏱️ Créditos oportunos\n• 🤝 Créditos interinstitucionales\n\nPor favor, responde con *1* o *2* para continuar.",
+    "content": "💰 *Información sobre Préstamos en Jesús del Gran Poder S.A.* 🏦\n\nQueremos ayudarte a encontrar la mejor opción financiera para ti.\n\n👔 *¿Eres asalariado?*\nPor favor responde con una de las siguientes opciones:\n\n *Sí, soy asalariado* – Consulta:\n• ℹ️ Información sobre el crédito al asalariado\n• 📋 Requisitos para el crédito\n• 🖥️ Iniciar Trámite Virtual\n\n *No, no soy asalariado* – ¡No te preocupes! También contamos con:\n• 💼 Créditos regulares\n• ⏱️ Créditos oportunos\n• 🤝 Créditos interinstitucionales\n\n✉️ *Escribe simplemente el número* si eres asalariado, o si no lo ere asalariado, y con gusto te daremos más información.",
     "variaciones": [
-      "👔 Si eres asalariado, puedes acceder a nuestros préstamos personales. Si no lo eres, también tenemos opciones adaptadas a tu situación.",
-      "🏦 Ofrecemos préstamos para asalariados y otras alternativas para quienes no lo son. Responde para saber más.",
-      "ℹ️ ¿Eres asalariado? Elige entre nuestros créditos diseñados para ti. Si no, conoce nuestras otras opciones financieras."
+      "👔 Si eres asalariado, puedes acceder a nuestros préstamos personales. Si no lo eres, también tenemos opciones adaptadas a tu situación. *Responde con *si eres asalariado* o *no eres asalariado.*",
+      "🏦 Ofrecemos préstamos para asalariados y otras alternativas para quienes no lo son. Por favor, responde con*si eres asalariado* o *no eres asalariado.* para continuar.",
+      "ℹ️ ¿Eres asalariado? Elige entre nuestros créditos diseñados para ti. Si no, conoce nuestras otras opciones financieras. Escribe *si eres asalariado* o *no eres asalariado.*"
     ],
     "tono": "informativo y profesional",
     "elementos_clave": {
@@ -167,7 +167,7 @@
     }
   },
   "informacion_prestamos_asalariados": {
-    "content": "🙋‍♂️ *¡Bienvenido a Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.!* 💼\n\n💫 *Créditos para Asalariados:*\nPensados especialmente para quienes cuentan con empleo formal, nuestros préstamos ofrecen:\n✅ *Tasas preferenciales*\n✅ *Aprobación rápida*\n✅ *Cuotas flexibles*\n✅ *Montos ajustados a tu capacidad de pago*\n\n📋 *Menú de opciones:*\n1️⃣ *Información sobre el crédito al asalariado*\n2️⃣ *Requisitos para el crédito al asalariado*\n3️⃣ *Iniciar Trámite Virtual*\n\n✍️ Por favor, responde con el número de la opción que deseas.",
+    "content": "🙋‍♂️ *¡Bienvenido a Gestión y Soporte de Proyectos Jesús del Gran Poder S.A.!* 💼\n\n💫 *Créditos para Asalariados:*\nPensados especialmente para quienes cuentan con empleo formal, nuestros préstamos ofrecen:\n✅ *Tasas preferenciales*\n✅ *Aprobación rápida*\n✅ *Cuotas flexibles*.\n\n",
     "categorias_prestamos": {
       "asalariados": {
         "caracteristicas": [

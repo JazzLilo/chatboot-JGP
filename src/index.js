@@ -44,8 +44,9 @@ const userStates = {};
 
 
 // ------------ FUNCIÓN PARA GENERAR RESPUESTA (Gemini) -----------
-const generateResponse = (intent, userMessage, sender) => {
-  // Mapeo de intenciones a handlers
+const generateResponse = async (intent, userMessage, sender, prompts, userStates) => {
+  
+
   const responseHandlers = {
     saludo: () => getRandomVariation(prompts.saludo),
     despedida: () => getRandomVariation(prompts.despedida),
@@ -53,7 +54,7 @@ const generateResponse = (intent, userMessage, sender) => {
     informacion_general: () => getRandomVariation(prompts.informacion_general),
     sucursales_horarios: () => prompts.sucursales_horarios.content,
     servicios_ofrecidos: () => getRandomVariation(prompts.servicios_ofrecidos),
-    tramite_virtual: () => handleVirtualApplication(sender, userMessage),
+    tramite_virtual: async () => await handleVirtualApplication(sender, userMessage),
     requisitos: () => getRandomVariation(prompts.requisitos),
     informacion_prestamos_asalariados: () => getRandomVariation(prompts.informacion_prestamos_asalariados),
     informacion_prestamos_no_asalariados: () => {
@@ -65,56 +66,59 @@ const generateResponse = (intent, userMessage, sender) => {
     chatbot: () => getRandomVariation(prompts.chatbot),
     cancelar: () => handleCancel(sender, userStates)
   };
-  // Obtener el handler o usar el default
-  const handler = responseHandlers[intent] ||
-    (() => getRandomVariation(prompts.otra_informacion));
+  const { state } = userStates[sender] || {};
+  const inProcess = await isInApplicationProcess(userStates, sender);
+  const getResponse = responseHandlers[intent] || (() => getRandomVariation(prompts.otra_informacion));
 
-  let baseResponse = handler();
-  console.log(`Intento: ${intent}, Respuesta: ${baseResponse}`, state  );
-  // Añadir menú si no está en proceso de trámite
-  if (!userStates[sender]) baseResponse = `${baseResponse}\n${contentMenu}`;
-  const { in_application, state } = userStates[sender] || {};
-  if (!in_application && state === "finished") {
-    baseResponse = `${baseResponse}\n${contentMenu}`;
-  }
-  // Añadir mensaje de cancelación si se ha cancelado el trámite
-  if (!in_application && state ===  "baned") {
-    baseResponse = `${baseResponse}\n${messageCancelFull}`;
+  const response = await getResponse();
+  console.log(`Intento: ${intent}, Respuesta: ${response}, Estado: ${state}, En Proceso: ${inProcess}`);
+
+  let finalResponse = response;
+
+  if (!inProcess && state !== "finished") {
+    finalResponse += `\n${contentMenu}`;
   }
 
+  if (!inProcess && state === "baned") {
+    finalResponse += `\n${messageCancelFull}`;
+  }
+  
 
-  return baseResponse;
-}
+  return finalResponse;
+};
+
 
 
 
 // ------------ MANEJO DEL FLUJO DEL TRÁMITE VIRTUAL -----------
 export const handleVirtualApplication = async (sender, userMessage) => {
-  if (!isInApplicationProcess(userStates, sender)) {
+  // Si NO está en trámite, inicializamos
+  if (!isInApplicationProcess(sender)) {
     const previousCancelAttempts = userStates[sender]?.cancelAttempts || 0;
-
     userStates[sender] = {
       state: "verificar_asalariado",
       data: new ApplicationData(),
       in_application: true,
-      cancelAttempts: previousCancelAttempts,
+      cancelAttempts: previousCancelAttempts, // Inicializar contador de cancelaciones
       timeoutFinish: setTimeout(() => {
         userStates[sender].state = "finished";
         userStates[sender].in_application = false;
-        delete userStates[sender].timeoutFinish;
-      }, 5 * 60 * 1000), // Finaliza trámite por inactividad (5 min)
-
+        delete userStates[sender].timeout;
+      }, 30 * 60 * 1000), // 30 minutos de inactividad
       timeoutBan: setTimeout(() => {
         if (userStates[sender].cancelAttempts >= MAX_CANCEL_ATTEMPTS) {
           userStates[sender].state = "baned";
           userStates[sender].in_application = false;
         }
         delete userStates[sender].timeoutBan;
-      }, 1 * 60 * 1000), // Banea si excedió cancelaciones (1 min)
+      }, 1 * 60 * 1000),
     };
-
-    return `${getRandomVariation(prompts["tramite_virtual"])} (Responda Sí o No)`;
+    return `${getRandomVariation(
+      prompts["tramite_virtual"]
+    )} (Responda Sí o No)`;
   } else {
+    // Continúa en el flujo
+    console.log(`El usuario ${sender} ya está en trámite, continuando...`);
     return await continueVirtualApplication(
       userStates[sender].state,
       userStates[sender].data,
@@ -122,13 +126,14 @@ export const handleVirtualApplication = async (sender, userMessage) => {
       userMessage
     );
   }
-};
+}
 
 
 
 export const continueVirtualApplication = async (state, data, sender, userMessage) => {
-
+  console.log(`Estado actual: ${state}, Mensaje del usuario: ${userMessage}`);
   if (userStates[sender].cancelAttempts >= MAX_CANCEL_ATTEMPTS) {
+    console.log(`Usuario ${sender} ha alcanzado el límite de intentos de cancelación.`);
     userStates[sender].state = "baned";
     userStates[sender].in_application = false;
   
