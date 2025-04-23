@@ -21,3 +21,25 @@ export const classifyIntent = async (message) => {
     return "otra_informacion";
   }
 };
+
+export const validateDocument = async (base64Data, mimeType, prompt) => {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          mimeType: mimeType,
+          data: base64Data,
+        },
+      },
+    ]);
+
+    const response = await result.response.text();
+    return response;
+  } catch (error) {
+    console.error("Error validando documento con Gemini:", error);
+    return "❌ Hubo un error al validar el documento.";
+  }
+};

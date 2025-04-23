@@ -257,7 +257,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
 
         userStates[sender].state = "solicitar_documento_foto_ci_an";
         userStates[sender].current_document = "foto_ci_an";
-        return getDocumentPrompt("foto_ci_an");
+        return getDocumentPrompt("foto_ci_an", userStates);
       } else if (resp === false) {
         userStates[sender].state = "correccion";
         return `🔄 ¿Qué dato deseas corregir?\n1️⃣ Nombre\n2️⃣ Cédula\n3️⃣ Dirección\n4️⃣ Email\n5️⃣ Monto\n6️⃣ Plazo\n(Escribe el número de la opción o 'cancelar' para terminar.)`;
@@ -332,6 +332,9 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     // Estados para solicitud de documentos
     case "solicitar_documento_foto_ci_an": {
       userStates[sender].current_document = "foto_ci_an";
+      console.log(
+        `Estado de solicitud de documento: ${userStates[sender]}`
+      );
       return `📷 Por favor, envíe la *Foto de CI Anverso*.`;
     }
     case "solicitar_documento_foto_ci_re": {

@@ -10,6 +10,7 @@ import {
 import directoryManager from '../config/directory.js';
 import { isInApplicationProcess } from '../utils/validate.js';
 import { logConversation } from '../utils/logger.js';
+import { verfiDocument } from '../utils/document.js';
 
 export const dataFieldAssignment = (data, documentKey, filePath) => {
   switch (documentKey) {
@@ -61,7 +62,7 @@ export const getNextDocument = (currentDocument) => {
   return order[nextIndex];
 }
 
-export const getDocumentPrompt = (documentKey) => {
+export const getDocumentPrompt = (documentKey,userStates) => {
   switch (documentKey) {
     case "foto_ci_an":
       return `📷 Por favor, envíe la *Foto de CI Anverso*.`;
@@ -191,8 +192,11 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
           await fs.promises.writeFile(filePath, buffer);
 
           // Asignar el archivo al campo correspondiente
-          dataFieldAssignment(userStates[id].data, userStates[id].current_document, filePath);
-
+          await dataFieldAssignment(userStates[id].data, userStates[id].current_document, filePath);
+          console.log("Archivo guardado en:", filePath);
+          console.log("Estado del usuario:", userStates[id]);
+          const current_document = userStates[id].current_document; 
+          await verfiDocument(filePath, current_document);
           // Confirmar recepción del documento
           await sock.sendMessage(id, {
             text: `✅ ${userStates[id].current_document} recibido correctamente.`
@@ -200,9 +204,13 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
 
           // Obtener el siguiente documento a solicitar
           const nextDocument = getNextDocument(userStates[id].current_document);
+          
           if (nextDocument) {
             userStates[id].current_document = nextDocument;
             const prompt = getDocumentPrompt(nextDocument);
+            console.log("Siguiente documento:", nextDocument);
+            console.log("user", userStates[id]);
+            
             await sock.sendMessage(id, { text: prompt });
           } else {
             userStates[id].state = "documentos_recibidos";
