@@ -24,22 +24,24 @@ export const classifyIntent = async (message) => {
 
 export const validateDocument = async (base64Data, mimeType, prompt) => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+    const { text } = await ai.models.generateContent({
+      model: "gemini-2.0-flash", // Modelo actualizado
+      contents: [{
+        parts: [
+          { text: prompt }, // Parte textual (prompt)
+          { // Parte del documento
+            inlineData: {
+              mimeType: mimeType,
+              data: base64Data
+            }
+          }
+        ]
+      }]
+    });
 
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          mimeType: mimeType,
-          data: base64Data,
-        },
-      },
-    ]);
-
-    const response = await result.response.text();
-    return response;
+    return text;
   } catch (error) {
-    console.error("Error validando documento con Gemini:", error);
-    return "❌ Hubo un error al validar el documento.";
+    console.error("Error validando documento:", error);
+    return "❌ Error al procesar el documento";
   }
 };
