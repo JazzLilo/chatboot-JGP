@@ -10,80 +10,10 @@ import {
 import directoryManager from '../config/directory.js';
 import { isInApplicationProcess } from '../utils/validate.js';
 import { logConversation } from '../utils/logger.js';
-import { verfiDocument } from '../utils/document.js';
-
-export const dataFieldAssignment = (data, documentKey, filePath) => {
-  switch (documentKey) {
-    case "foto_ci_an":
-      data.foto_ci_an = filePath;
-      break;
-    case "foto_ci_re":
-      data.foto_ci_re = filePath;
-      break;
-    case "croquis":
-      data.croquis = filePath;
-      break;
-    case "boleta_pago1":
-      data.boleta_pago1 = filePath;
-      break;
-    case "boleta_pago2":
-      data.boleta_pago2 = filePath;
-      break;
-    case "boleta_pago3":
-      data.boleta_pago3 = filePath;
-      break;
-    case "factura":
-      data.factura = filePath;
-      break;
-    case "gestora_publica_afp":
-      data.gestora_publica_afp = filePath;
-      break;
-    default:
-      console.warn(`Documento desconocido: ${documentKey}`);
-  }
-}
-
-export const getNextDocument = (currentDocument) => {
-  const order = [
-    "foto_ci_an",
-    "foto_ci_re",
-    "croquis",
-    "boleta_pago1",
-    "boleta_pago2",
-    "boleta_pago3",
-    "factura",
-    "gestora_publica_afp",
-  ];
-
-  const currentIndex = order.indexOf(currentDocument);
-  if (currentIndex === -1) return null;
-  const nextIndex = currentIndex + 1;
-  if (nextIndex >= order.length) return null;
-  return order[nextIndex];
-}
-
-export const getDocumentPrompt = (documentKey,userStates) => {
-  switch (documentKey) {
-    case "foto_ci_an":
-      return `📷 Por favor, envíe la *Foto de CI Anverso*.`;
-    case "foto_ci_re":
-      return `📷 Por favor, envíe la *Foto de CI Reverso*.`;
-    case "croquis":
-      return `📐 Por favor, envíe el *Croquis*.`;
-    case "boleta_pago1":
-      return `💰 Por favor, envíe la *Boleta de Pago 1*.`;
-    case "boleta_pago2":
-      return `💰 Por favor, envíe la *Boleta de Pago 2*.`;
-    case "boleta_pago3":
-      return `💰 Por favor, envíe la *Boleta de Pago 3*.`;
-    case "factura":
-      return `📄 Por favor, envíe la *Factura de Luz, Agua o Gas*.`;
-    case "gestora_publica_afp":
-      return `📑 Por favor, envíe la *Gestora Pública AFP* en formato PDF.`;
-    default:
-      return `📄 Por favor, envíe el documento solicitado.`;
-  }
-}
+import { userStateInit } from '../controllers/user.state.controller.js'
+import {messageCancel} from '../utils/message.js'
+import { documentIngress } from '../controllers/document.gateway.js';
+import { resetUserState } from './user.controller.js';
 
 export const connectToWhatsApp = async (userStates, prompts, handlers) => {
   const {
@@ -121,26 +51,15 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
       // Revisar si el usuario tiene un estado activo
       if (!userStates[id]) {
         console.log("Nuevo usuario conectado:", id);
-        userStates[id] = {
-          state: "INIT",
-          data: new ApplicationData(),
-          in_application: false,
-          cancelAttempts: 0,
-          timeout: setTimeout(() => {
-            userStates[id].state = "finished";
-            userStates[id].in_application = false;
-            delete userStates[id].timeout;
-          }, 5 * 60 * 1000),
-        };
+        userStateInit(userStates, id);
         const initialMenu = getRandomVariation(prompts["saludo"]) + "\n" + contentMenu;
         await sock.sendMessage(id, { text: initialMenu });
         logConversation(id, initialMenu, "bot");
         return;
       } else if (userStates[id].state === "baned") {
-        // Usuario baneado: No permitir acceso
-        const mensajeBloqueo = "❌ Has alcanzado el límite de intentos de cancelación.";
-        await sock.sendMessage(id, { text: mensajeBloqueo });
-        logConversation(id, mensajeBloqueo, "bot");
+        // Si el usuario ha sido baneado, no procesar más mensajes
+        await sock.sendMessage(id, { text: messageCancel });
+        logConversation(id, messageCancel, "bot");
         return;
       }
 
@@ -149,90 +68,16 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
 
       // Manejo de recepción de documentos
       if (userStates[id].in_application && userStates[id].current_document) {
-        try {
-          // Validar si el mensaje contiene algún tipo de archivo
-          const hasDocument = message.message?.documentMessage;
-          const hasImage = message.message?.imageMessage;
-          const hasVideo = message.message?.videoMessage;
-
-          if (!hasDocument && !hasImage && !hasVideo) {
-            await sock.sendMessage(id, {
-              text: "❌ Por favor, envíe un archivo (imagen, documento PDF u otro formato)."
-            });
-            return;
-          }
-
-          // Descargar el archivo
-          const buffer = await downloadMediaMessage(message, 'buffer', {});
-
-          // Determinar la extensión basada en el tipo de mensaje
-          let fileExt;
-          if (hasImage) {
-            fileExt = '.jpg';
-          } else if (hasVideo) {
-            fileExt = '.mp4';
-          } else {
-            // Para documentos, mantener la extensión original o usar .pdf por defecto
-            const originalName = message.message?.documentMessage?.fileName || '';
-            fileExt = path.extname(originalName) || '.pdf';
-          }
-
-          // Generar nombre único para el archivo
-          const timestamp = new Date().getTime();
-          const fileName = `${userStates[id].current_document}_${timestamp}${fileExt}`;
-
-          // Asegurar que existe el directorio temporal
-          const tempDir = directoryManager.getPath("temp");
-          if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
-          }
-
-          // Guardar el archivo temporalmente
-          const filePath = path.join(tempDir, fileName);
-          await fs.promises.writeFile(filePath, buffer);
-
-          // Asignar el archivo al campo correspondiente
-          await dataFieldAssignment(userStates[id].data, userStates[id].current_document, filePath);
-          console.log("Archivo guardado en:", filePath);
-          console.log("Estado del usuario:", userStates[id]);
-          const current_document = userStates[id].current_document; 
-          await verfiDocument(filePath, current_document);
-          // Confirmar recepción del documento
-          await sock.sendMessage(id, {
-            text: `✅ ${userStates[id].current_document} recibido correctamente.`
-          });
-
-          // Obtener el siguiente documento a solicitar
-          const nextDocument = getNextDocument(userStates[id].current_document);
-          
-          if (nextDocument) {
-            userStates[id].current_document = nextDocument;
-            const prompt = getDocumentPrompt(nextDocument);
-            console.log("Siguiente documento:", nextDocument);
-            console.log("user", userStates[id]);
-            
-            await sock.sendMessage(id, { text: prompt });
-          } else {
-            userStates[id].state = "documentos_recibidos";
-            const respuesta = await handlers.continueVirtualApplication(
-              userStates[id].state,
-              userStates[id].data,
-              id,
-              "documentos_completos",
-              userStates,
-              prompts
-            );
-            await sock.sendMessage(id, { text: respuesta });
-          }
-
-          return;
-        } catch (error) {
-          console.error('Error procesando documento:', error);
-          await sock.sendMessage(id, {
-            text: "❌ Hubo un error al procesar el archivo. Por favor, intente nuevamente."
-          });
-          return;
-        }
+         if (userStates[id].intents == 3) {
+                  userStates[id].state = "finished";
+                  userStates[id].in_application = false;
+                  delete userStates[id].timeout;
+                  delete userStates[id].intents;
+                  resetUserState(userStates, id);
+                  sock.sendMessage(id,{text:`❌ Demasiados intentos inválidos. Por favor, inicie el trámite nuevamente.\n\n${contentMenu}`});
+                  return;
+                }
+        await documentIngress(userStates, message, sock);
       }
 
       // Manejo normal de mensajes
@@ -298,7 +143,7 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
 
       } else if (userStates[id].state !== "finished") {
         const enTramite = isInApplicationProcess(userStates, id);
-
+        console.log("Estado del usuario:", userStates);
         const respuesta = enTramite
           ? await handlers.continueVirtualApplication(
             userStates[id].state,
@@ -309,14 +154,15 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
             prompts
           )
           : await handleUserMessage(id, mensaje);
-
+        console.log("Respuesta del bot:", respuesta);
         await sock.sendMessage(id, { text: respuesta });
         logConversation(id, respuesta, "bot");
 
       } else {
-        const mensajeEspera = `⏳ El chatbot se está reiniciando y no puede procesar nuevos mensajes ahora. Por favor, espera 5 minutos antes de intentar nuevamente.`;
+        const mensajeEspera = `⏳ El chatbot se está reiniciando y no puede procesar nuevos mensajes ahora. Por favor, espera unos minutos antes de intentar nuevamente.`;
         await sock.sendMessage(id, { text: mensajeEspera });
         logConversation(id, mensajeEspera, "bot");
+        resetUserState(userStates, id);
       }
 
     }

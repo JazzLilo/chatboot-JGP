@@ -6,9 +6,13 @@ import { readFile } from 'fs/promises';
 import { PORT } from './config/index.js';
 import { MAX_CANCEL_ATTEMPTS } from './utils/constant.js'
 import { calculateMonthlyFee, classifyYesNo, getRandomVariation } from './config/utils.js'
-import { validateEmail, isInApplicationProcess } from './utils/validate.js'
+import { validateEmail, isInApplicationProcess} from './utils/validate.js'
 import { ApplicationData } from './controllers/tratamientoBD.js'
-import { connectToWhatsApp, getDocumentPrompt, } from './controllers/conexionBaileys.js'
+import { connectToWhatsApp } from './controllers/conexionBaileys.js'
+import { getLatLongFromLink} from './controllers/gemini.controller.js'
+import {
+  getDocumentPrompt
+} from './utils/conversation.prompts.js';
 import { classifyIntent } from './controllers/gemini.controller.js';
 import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained } from './utils/message.js';
 import indexRouter from './routes/index.routes.js'
@@ -18,7 +22,8 @@ import { map } from './utils/prompt.js';
 import { resetUserState } from './controllers/user.controller.js';
 import { logConversation } from './utils/logger.js'
 import { saveApplicationData } from './controllers/user.data.controller.js';
-import { handleUserMessage, handleCancel } from './controllers/conversation.controller.js'
+import { handleUserMessage, handleCancel } from './controllers/conversation.controller.js';
+import { getDocumentState, documentsFlow } from './utils/document.flow.js'
 //import { continueVirtualApplication, generateResponse,  handleUserMessage, handleVirtualApplication } from './controllers/conversation.controller.js'
 
 dotenv.config();
@@ -45,7 +50,7 @@ const userStates = {};
 
 // ------------ FUNCIÓN PARA GENERAR RESPUESTA (Gemini) -----------
 const generateResponse = async (intent, userMessage, sender, prompts, userStates) => {
-  
+
 
   const responseHandlers = {
     saludo: () => getRandomVariation(prompts.saludo),
@@ -82,7 +87,7 @@ const generateResponse = async (intent, userMessage, sender, prompts, userStates
   if (!inProcess && state === "baned") {
     finalResponse += `\n${messageCancelFull}`;
   }
-  
+
 
   return finalResponse;
 };
@@ -95,11 +100,15 @@ export const handleVirtualApplication = async (sender, userMessage) => {
   // Si NO está en trámite, inicializamos
   if (!isInApplicationProcess(sender)) {
     const previousCancelAttempts = userStates[sender]?.cancelAttempts || 0;
+    const previousRetries = userStates[sender]?.retries || 0;
+    const previousIntents = userStates[sender]?.intents || 0;
     userStates[sender] = {
       state: "verificar_asalariado",
       data: new ApplicationData(),
       in_application: true,
       cancelAttempts: previousCancelAttempts, // Inicializar contador de cancelaciones
+      retries: previousRetries, // Inicializar contador de reintentos
+      intents: previousIntents, // Inicializar contador de intents
       timeoutFinish: setTimeout(() => {
         userStates[sender].state = "finished";
         userStates[sender].in_application = false;
@@ -131,16 +140,17 @@ export const handleVirtualApplication = async (sender, userMessage) => {
 
 
 export const continueVirtualApplication = async (state, data, sender, userMessage) => {
+  console.log('****************************************************************');
   console.log(`Estado actual: ${state}, Mensaje del usuario: ${userMessage}`);
+  console.log('****************************************************************');
   if (userStates[sender].cancelAttempts >= MAX_CANCEL_ATTEMPTS) {
     console.log(`Usuario ${sender} ha alcanzado el límite de intentos de cancelación.`);
     userStates[sender].state = "baned";
     userStates[sender].in_application = false;
-  
+
     // Limpiar datos antiguos
     delete userStates[sender].timeoutBan;
-    delete userStates[sender].retries;
-  
+
     // Cambiar estado a 'reen' después de 1 minuto
     setTimeout(() => {
       if (userStates[sender] && userStates[sender].state === "baned") {
@@ -148,14 +158,14 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
         console.log(`⏱ Estado del usuario ${sender} cambiado a 'reen' tras 1 minuto.`);
       }
     }, 1 * 60 * 1000); // 1 minuto
-  
+
     // Reiniciar estado completamente después de 5 minutos
     setTimeout(() => {
       userStates[sender].cancelAttempts = 0;
       resetUserState(userStates, sender);
       console.log(`🔄 Estado del usuario ${sender} reiniciado tras 1 minutos.`);
     }, 1 * 60 * 1000); // 5 minutos
-  
+
     return `❌ Has alcanzado el límite de intentos de cancelación. Intenta nuevamente en unos minutos.`;
   }
 
@@ -166,6 +176,13 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
 
     console.log('Cancelación exitosa', userStates);
     return `✅ Has cancelado tu solicitud. Puedes iniciar nuevamente el trámite en cualquier momento.\n\n${contentMenu}`;
+  }
+
+  // Verifica si el usuario está en el flujo de documentos
+  if (state.startsWith('solicitar_documento_')) {
+    const key = state.replace('solicitar_documento_', '');
+    userStates[sender].current_document = key;
+    return getDocumentPrompt(key);
   }
 
   switch (state) {
@@ -211,8 +228,20 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       if (!userMessage.trim())
         return `❌ Dirección no válida. Intente de nuevo:`;
       data.direccion = userMessage.trim();
+      userStates[sender].state = "enlace_maps";
+      return `Entendido, ahora comparta la ubicacion mediante un url de maps o escriba omitir:`;
+    }
+    case "enlace_maps": {
+      if (userMessage.toLowerCase() === "omitir") {  data.latitud  = 0; data.longitud = 0; userStates[sender].state = "email";   return `Ubicación omitida. Perfecto, ahora ingrese su email:`;}
+      const link = userMessage.trim();
+      const coords = await getLatLongFromLink(link);
+      if (!coords) {
+        return `❌ Enlace no válido o no se pudo extraer coordenadas. Intente de nuevo:`;
+      }
+      data.latitud  = coords.latitude;
+      data.longitud = coords.longitude;
       userStates[sender].state = "email";
-      return `Entendido, ahora ingrese su email:`;
+      return `Perfecto, ahora ingrese su email:`;
     }
     case "email": {
       if (!validateEmail(userMessage)) {
@@ -255,9 +284,10 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
         const userTempDir = directoryManager.getPath("temp") + "/" + sender;
         fs.mkdirSync(userTempDir, { recursive: true });
 
-        userStates[sender].state = "solicitar_documento_foto_ci_an";
-        userStates[sender].current_document = "foto_ci_an";
-        return getDocumentPrompt("foto_ci_an", userStates);
+        const firstKey = documentsFlow[0].key;
+        userStates[sender].state = getDocumentState(firstKey);
+        userStates[sender].current_document = firstKey;
+        return getDocumentPrompt(firstKey);
       } else if (resp === false) {
         userStates[sender].state = "correccion";
         return `🔄 ¿Qué dato deseas corregir?\n1️⃣ Nombre\n2️⃣ Cédula\n3️⃣ Dirección\n4️⃣ Email\n5️⃣ Monto\n6️⃣ Plazo\n(Escribe el número de la opción o 'cancelar' para terminar.)`;
@@ -267,7 +297,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     }
     case "correccion": {
       const opcion = parseInt(userMessage);
-      if (![1, 2, 3, 4, 5, 6].includes(opcion)) {
+      if (![1, 2, 3, 4, 5, 6, 7].includes(opcion)) {
         return `❌ Opción no válida, intente de nuevo:`;
       }
 
@@ -275,10 +305,12 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       return `Ingrese el nuevo valor (o 'cancelar' para terminar):`;
     }
 
+
     // Manejo de estados para correcciones
     case "correccion_nombre":
     case "correccion_cedula":
     case "correccion_direccion":
+    case "correccion_enlace_maps":
     case "correccion_email":
     case "correccion_monto":
     case "correccion_plazo": {
@@ -299,6 +331,18 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
         case "direccion":
           if (!userMessage.trim()) return `❌ Dirección no válida:`;
           data.direccion = userMessage.trim();
+          break;
+        case "enlace_maps":
+          if (userMessage.toLowerCase() === "omitir") {
+            data.latitud = 0;
+            data.longitud = 0;
+            break;
+          }
+          const link = userMessage.trim();
+          const coords = await getLatLongFromLink(link);
+          if (!coords) return `❌ Enlace no válido:`;
+          data.latitud = coords.latitude;
+          data.longitud = coords.longitude;
           break;
         case "email":
           if (!validateEmail()) return `❌ Email no válido:`;
@@ -327,43 +371,6 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
 
       userStates[sender].state = "verificacion";
       return `${showVerification(data)}`;
-    }
-
-    // Estados para solicitud de documentos
-    case "solicitar_documento_foto_ci_an": {
-      userStates[sender].current_document = "foto_ci_an";
-      console.log(
-        `Estado de solicitud de documento: ${userStates[sender]}`
-      );
-      return `📷 Por favor, envíe la *Foto de CI Anverso*.`;
-    }
-    case "solicitar_documento_foto_ci_re": {
-      userStates[sender].current_document = "foto_ci_re";
-      return `📷 Por favor, envíe la *Foto de CI Reverso*.`;
-    }
-    case "solicitar_documento_croquis": {
-      userStates[sender].current_document = "croquis";
-      return `📐 Por favor, envíe el *Croquis*.`;
-    }
-    case "solicitar_documento_boleta_pago1": {
-      userStates[sender].current_document = "boleta_pago1";
-      return `💰 Por favor, envíe la *Boleta de Pago 1*.`;
-    }
-    case "solicitar_documento_boleta_pago2": {
-      userStates[sender].current_document = "boleta_pago2";
-      return `💰 Por favor, envíe la *Boleta de Pago 2*.`;
-    }
-    case "solicitar_documento_boleta_pago3": {
-      userStates[sender].current_document = "boleta_pago3";
-      return `💰 Por favor, envíe la *Boleta de Pago 3*.`;
-    }
-    case "solicitar_documento_factura": {
-      userStates[sender].current_document = "factura";
-      return `📄 Por favor, envíe la *Factura de Luz, Agua o Gas*.`;
-    }
-    case "solicitar_documento_gestora_publica_afp": {
-      userStates[sender].current_document = "gestora_publica_afp";
-      return `📑 Por favor, envíe la *Gestora Pública AFP* en formato PDF.`;
     }
 
     // Estado final después de recibir todos los documentos

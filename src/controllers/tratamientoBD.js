@@ -33,7 +33,9 @@ export const insertSolicitud = async (data) => {
             email: data.email,
             monto: data.monto,
             plazo: data.plazo_meses,
-            cuota: data.cuota_mensual
+            cuota: data.cuota_mensual,
+            latitud: data.latitud,
+            longitud: data.longitud
         });
 
         await conn.query("BEGIN");
@@ -47,8 +49,10 @@ export const insertSolicitud = async (data) => {
                 monto, 
                 plazo_meses, 
                 cuota_mensual,
-                estado
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                estado,
+                latitud,
+                longitud
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             RETURNING id;
         `;
         const values = [
@@ -59,7 +63,9 @@ export const insertSolicitud = async (data) => {
             data.monto,
             data.plazo_meses,
             data.cuota_mensual,
-            'pendiente' // Agregamos el estado por defecto
+            'pendiente', // Agregamos el estado por defecto
+            data.latitud,
+            data.longitud,
         ];
 
         // Validar que los datos cumplen con las restricciones

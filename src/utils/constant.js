@@ -32,6 +32,8 @@ export const validIntents = [
   "cancelar",
 ];
 
+
+
 export const tabla_asesor = {
   1: 1090,
   2: 552.61,

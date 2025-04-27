@@ -22,6 +22,53 @@ export const classifyIntent = async (message) => {
   }
 };
 
+import fetch from 'node-fetch';
+
+export const getLatLongFromLink = async (link) => {
+  try {
+    // 1. Obtener HTML de la URL final
+    const res = await fetch(link, { redirect: 'follow' });
+    const finalUrl = res.url;
+    const html = await res.text();
+
+    // 2. Crear prompt para Gemini
+    const promptText = `Extrae EXCLUSIVAMENTE las coordenadas geográficas (latitud y longitud) 
+    en formato decimal desde esta URL o HTML. Respuesta SOLO en formato JSON: {"lat": number, "lng": number}
+
+    URL: ${finalUrl}
+    HTML Fragmento relevante: ${html.slice(0, 15000)} // Acortamos por contexto
+
+    Ejemplo válido: {"lat": -12.12345, "lng": -77.12345}
+    Si no hay coordenadas, devuelve null.`;
+
+    // 3. Consultar a Gemini
+    const { text } = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: [{ parts: [{ text: promptText }] }],
+    });
+
+    // 4. Parsear respuesta
+    const jsonMatch = text.match(/\{.*\}/);
+    if (!jsonMatch) return null;
+    
+    const coords = JSON.parse(jsonMatch[0]);
+    if (coords?.lat && coords?.lng) {
+      return { 
+        latitude: parseFloat(coords.lat),
+        longitude: parseFloat(coords.lng)
+      };
+    }
+
+    return null;
+
+  } catch (e) {
+    console.error('Error obteniendo coordenadas:', e);
+    return null;
+  }
+}
+
+
+
 export const validateDocument = async (base64Data, mimeType, prompt) => {
   try {
     const { text } = await ai.models.generateContent({

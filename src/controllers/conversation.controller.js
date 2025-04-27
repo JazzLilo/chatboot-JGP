@@ -2,7 +2,7 @@ import { calculateMonthlyFee, classifyYesNo, getRandomVariation } from '../confi
 import { resetUserState } from '../controllers/user.controller.js';
 import { validateEmail, isInApplicationProcess } from '../utils/validate.js';
 import { showVerification } from '../utils/generate.js';
-import { connectToWhatsApp, getDocumentPrompt, } from '../controllers/conexionBaileys.js'
+import { connectToWhatsApp } from '../controllers/conexionBaileys.js'
 import directoryManager from '../config/directory.js';
 import { saveApplicationData } from '../controllers/user.data.controller.js';
 import { logConversation } from '../utils/logger.js'
@@ -11,7 +11,9 @@ import { ApplicationData } from '../controllers/tratamientoBD.js'
 import fs from "fs";
 import { MAX_CANCEL_ATTEMPTS } from '../utils/constant.js'
 import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained } from '../utils/message.js';
-
+import {
+  getDocumentPrompt,
+} from '../utils/conversation.prompts.js';
 export const continueVirtualApplication = async (state, data, sender, userMessage, userStates, prompts) => {
   // Permite cancelar en cualquier momento
   if (userMessage.toLowerCase().includes("cancelar")) {

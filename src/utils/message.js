@@ -14,3 +14,13 @@ export const messageCancel = '❌ Has excedido el número máximo de intentos de
 export const messageCancelSuccess = '✅ Has cancelado tu solicitud. Puedes iniciar nuevamente el trámite en cualquier momento.';
 
 export const messageCancelFull = '✅ Tu solicitud ha sido cancelada exitosamente. Puedes iniciar nuevamente el trámite en cualquier momento.';
+
+export const messageRequestFile = '❌ Por favor, envíe un archivo (imagen, documento PDF u otro formato).' 
+
+export const messageRequestFileSuccess = (file_name) =>
+  `✅ ${file_name} recibido correctamente.`;
+
+export const messageRequestFileError = (file_name) =>
+  `❌ ${file_name} no es válido o no cumple con el formato requerido. Por favor, inténtalo de nuevo.`;
+
+export const messageProcessFileError = '❌ Hubo un error al procesar el archivo. Por favor, inténtalo de nuevo.'

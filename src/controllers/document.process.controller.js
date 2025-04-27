@@ -1,7 +1,7 @@
 import fs from "fs";
 import ExifParser from "exif-parser";
 import fetch from 'node-fetch';
-import { validateDocument } from '../controllers/gemini.controller.js';
+import { validateDocument } from './gemini.controller.js';
 
 /**
  * Procesa un documento o imagen: valida formato, extrae datos y compara con userData.
@@ -17,6 +17,7 @@ export async function processDocument(filePath, documentKey, userData) {
 
   // 1. Validación de legibilidad y formato
   const validationPrompt = getValidationPromptFromKey(documentKey);
+  console.log("Validación de legibilidad y formato:", validationPrompt);
   const policyResult = await validateDocument(base64Data, mimeType, validationPrompt);
 
 
@@ -26,6 +27,7 @@ export async function processDocument(filePath, documentKey, userData) {
   //const matches = compareWithUserData(extracted, userData);
   //return { policyResult, extracted, matches };
   const resultado = policyResult.trim(); // "si" o "no"
+  console.log("Resultado de la validación:", resultado);
   return resultado;
 }
 
@@ -167,7 +169,7 @@ Responde únicamente con:
 "si" o "no"`;
 
     case "foto_ci_re":
-      return `Analiza esta imagen y responde únicamente si el reverso de la cédula de identidad boliviana es LEGIBLE.
+      return `Analiza esta imagen y responde únicamente si el reverso de la cédula de identidad boliviana es LEGIBLE, que si solo si sea el reverso de la cédula de identidad.
 
 Responde únicamente con:
 "si" o "no"`;
@@ -201,6 +203,8 @@ La fecha de hoy es ${dateToday}.
 
 Responde únicamente con:
 "si" o "no"`;
+    case "ubicacion":
+      return `No es obligadorio. si el usuario mando saltar, no es necesario que lo analices. Retorna si`
 
     default:
       return `Analiza si el documento enviado es válido, legible y corresponde al tipo solicitado.

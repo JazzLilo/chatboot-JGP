@@ -70,6 +70,7 @@ class ProjectDirectories {
     this._basePaths = {
       root: this._basePaths.root,
       src: path.join(this._basePaths.root, 'src'),
+      db: path.join(this._basePaths.root, 'src/db'),
       config: path.join(this._basePaths.root, 'src/config'),
       temp: path.join(this._basePaths.root, 'src/temp'),
       assets: path.join(this._basePaths.root, 'src/assets'),
