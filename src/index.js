@@ -4,9 +4,9 @@ import cors from "cors";
 import fs from "fs";
 import { readFile } from 'fs/promises';
 import { PORT } from './config/index.js';
-import { MAX_CANCEL_ATTEMPTS } from './utils/constant.js'
+import { MAX_CANCEL_ATTEMPTS, MAX_RETRIES } from './utils/constant.js'
 import { calculateMonthlyFee, classifyYesNo, getRandomVariation } from './config/utils.js'
-import { validateEmail, isInApplicationProcess} from './utils/validate.js'
+import { validateEmail, isInApplicationProcess, exededRetryLimit} from './utils/validate.js'
 import { ApplicationData } from './controllers/tratamientoBD.js'
 import { connectToWhatsApp } from './controllers/conexionBaileys.js'
 import { getLatLongFromLink} from './controllers/gemini.controller.js'
@@ -14,16 +14,16 @@ import {
   getDocumentPrompt
 } from './utils/conversation.prompts.js';
 import { classifyIntent } from './controllers/gemini.controller.js';
-import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained } from './utils/message.js';
+import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained, messageMaxRetry } from './utils/message.js';
 import indexRouter from './routes/index.routes.js'
 import directoryManager from './config/directory.js';
 import { showVerification } from './utils/generate.js';
 import { map } from './utils/prompt.js';
-import { resetUserState } from './controllers/user.controller.js';
 import { logConversation } from './utils/logger.js'
 import { saveApplicationData } from './controllers/user.data.controller.js';
 import { handleUserMessage, handleCancel } from './controllers/conversation.controller.js';
 import { getDocumentState, documentsFlow } from './utils/document.flow.js'
+import {userStateVerifyAsalariado, userStateBaned, resetUserState, userStateExededRetryLimit} from './controllers/user.state.controller.js'
 //import { continueVirtualApplication, generateResponse,  handleUserMessage, handleVirtualApplication } from './controllers/conversation.controller.js'
 
 dotenv.config();
@@ -51,17 +51,15 @@ const userStates = {};
 // ------------ FUNCIÓN PARA GENERAR RESPUESTA (Gemini) -----------
 const generateResponse = async (intent, userMessage, sender, prompts, userStates) => {
 
-
   const responseHandlers = {
     saludo: () => getRandomVariation(prompts.saludo),
     despedida: () => getRandomVariation(prompts.despedida),
-    prestamos: () => getRandomVariation(prompts.prestamos),
+    prestamos:  async () => await handleVirtualApplication(sender, userMessage),
     informacion_general: () => getRandomVariation(prompts.informacion_general),
     sucursales_horarios: () => prompts.sucursales_horarios.content,
     servicios_ofrecidos: () => getRandomVariation(prompts.servicios_ofrecidos),
     tramite_virtual: async () => await handleVirtualApplication(sender, userMessage),
     requisitos: () => getRandomVariation(prompts.requisitos),
-    informacion_prestamos_asalariados: () => getRandomVariation(prompts.informacion_prestamos_asalariados),
     informacion_prestamos_no_asalariados: () => {
       const content = prompts.informacion_prestamos_no_asalariados.content || "";
       const sucursales = prompts.sucursales_horarios.content || "";
@@ -71,9 +69,10 @@ const generateResponse = async (intent, userMessage, sender, prompts, userStates
     chatbot: () => getRandomVariation(prompts.chatbot),
     cancelar: () => handleCancel(sender, userStates)
   };
+  const getResponse = responseHandlers[intent] || (() => getRandomVariation(prompts.otra_informacion));
   const { state } = userStates[sender] || {};
   const inProcess = await isInApplicationProcess(userStates, sender);
-  const getResponse = responseHandlers[intent] || (() => getRandomVariation(prompts.otra_informacion));
+  
 
   const response = await getResponse();
   console.log(`Intento: ${intent}, Respuesta: ${response}, Estado: ${state}, En Proceso: ${inProcess}`);
@@ -88,6 +87,9 @@ const generateResponse = async (intent, userMessage, sender, prompts, userStates
     finalResponse += `\n${messageCancelFull}`;
   }
 
+  if (state === "limit_retries") {
+      finalResponse += `\n${messageMaxRetry}`;
+    }
 
   return finalResponse;
 };
@@ -99,29 +101,7 @@ const generateResponse = async (intent, userMessage, sender, prompts, userStates
 export const handleVirtualApplication = async (sender, userMessage) => {
   // Si NO está en trámite, inicializamos
   if (!isInApplicationProcess(sender)) {
-    const previousCancelAttempts = userStates[sender]?.cancelAttempts || 0;
-    const previousRetries = userStates[sender]?.retries || 0;
-    const previousIntents = userStates[sender]?.intents || 0;
-    userStates[sender] = {
-      state: "verificar_asalariado",
-      data: new ApplicationData(),
-      in_application: true,
-      cancelAttempts: previousCancelAttempts, // Inicializar contador de cancelaciones
-      retries: previousRetries, // Inicializar contador de reintentos
-      intents: previousIntents, // Inicializar contador de intents
-      timeoutFinish: setTimeout(() => {
-        userStates[sender].state = "finished";
-        userStates[sender].in_application = false;
-        delete userStates[sender].timeout;
-      }, 30 * 60 * 1000), // 30 minutos de inactividad
-      timeoutBan: setTimeout(() => {
-        if (userStates[sender].cancelAttempts >= MAX_CANCEL_ATTEMPTS) {
-          userStates[sender].state = "baned";
-          userStates[sender].in_application = false;
-        }
-        delete userStates[sender].timeoutBan;
-      }, 1 * 60 * 1000),
-    };
+    userStateVerifyAsalariado(userStates, sender);
     return `${getRandomVariation(
       prompts["tramite_virtual"]
     )} (Responda Sí o No)`;
@@ -145,28 +125,15 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
   console.log('****************************************************************');
   if (userStates[sender].cancelAttempts >= MAX_CANCEL_ATTEMPTS) {
     console.log(`Usuario ${sender} ha alcanzado el límite de intentos de cancelación.`);
-    userStates[sender].state = "baned";
-    userStates[sender].in_application = false;
-
-    // Limpiar datos antiguos
-    delete userStates[sender].timeoutBan;
-
-    // Cambiar estado a 'reen' después de 1 minuto
-    setTimeout(() => {
-      if (userStates[sender] && userStates[sender].state === "baned") {
-        userStates[sender].state = "reen";
-        console.log(`⏱ Estado del usuario ${sender} cambiado a 'reen' tras 1 minuto.`);
-      }
-    }, 1 * 60 * 1000); // 1 minuto
-
-    // Reiniciar estado completamente después de 5 minutos
-    setTimeout(() => {
-      userStates[sender].cancelAttempts = 0;
-      resetUserState(userStates, sender);
-      console.log(`🔄 Estado del usuario ${sender} reiniciado tras 1 minutos.`);
-    }, 1 * 60 * 1000); // 5 minutos
+    userStateBaned(userStates, sender);
 
     return `❌ Has alcanzado el límite de intentos de cancelación. Intenta nuevamente en unos minutos.`;
+  }
+
+  if (userStates[sender].retries >= MAX_RETRIES) {
+    console.log(`Usuario ${sender} ha alcanzado el límite de intentos.`);
+    userStateExededRetryLimit(userStates, sender);
+    return `❌ Has alcanzado el límite de intentos. Por favor, intenta nuevamente más tarde.`;
   }
 
   // Permite cancelar en cualquier momento
@@ -200,13 +167,6 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
         return message ? `${message}\n\n` : `${contentMenu}`;
       } else {
         userStates[sender].retries += 1;
-        if (userStates[sender].retries >= 3) {
-          userStates[sender].state = "finished";
-          userStates[sender].in_application = false;
-          delete userStates[sender].timeout;
-          delete userStates[sender].retries;
-          return `❌ Demasiados intentos inválidos. Por favor, inicie el trámite nuevamente.\n\n${contentMenu}`;
-        }
         return `❓ Por favor, responda Sí o No. Intentos: ${userStates[sender].retries}/3.`;
       }
     }
@@ -218,6 +178,8 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     }
     case "cedula": {
       if (!/^\d+$/.test(userMessage) || userMessage.length < 5) {
+       
+        userStates[sender].retries += 1;
         return `❌ Cédula no válida. Intente de nuevo:`;
       }
       data.cedula = userMessage;
@@ -225,8 +187,11 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       return `Ahora, ingrese su dirección:`;
     }
     case "direccion": {
-      if (!userMessage.trim())
+      if (!userMessage.trim()){
+        
+        userStates[sender].retries += 1;
         return `❌ Dirección no válida. Intente de nuevo:`;
+      }
       data.direccion = userMessage.trim();
       userStates[sender].state = "enlace_maps";
       return `Entendido, ahora comparta la ubicacion mediante un url de maps o escriba omitir:`;
@@ -234,8 +199,10 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     case "enlace_maps": {
       if (userMessage.toLowerCase() === "omitir") {  data.latitud  = 0; data.longitud = 0; userStates[sender].state = "email";   return `Ubicación omitida. Perfecto, ahora ingrese su email:`;}
       const link = userMessage.trim();
+      console.log(link);
       const coords = await getLatLongFromLink(link);
       if (!coords) {
+        userStates[sender].retries += 1;
         return `❌ Enlace no válido o no se pudo extraer coordenadas. Intente de nuevo:`;
       }
       data.latitud  = coords.latitude;
@@ -245,6 +212,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     }
     case "email": {
       if (!validateEmail(userMessage)) {
+        userStates[sender].retries += 1;
         return `❌ Email no válido. Intente de nuevo:`;
       }
       data.email = userMessage.trim();
@@ -257,22 +225,26 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
 
       // Validar que sea un número dentro del rango permitido
       if (isNaN(val) || val < 1000 || val > 10000) {
+        userStates[sender].retries += 1;
         return `❌ Monto no válido. Por favor, ingrese un monto entre 1,000 a 100,000`;
       }
 
       // Guardar el monto si es válido
       data.monto = val;
       userStates[sender].state = "plazo";
-      return `Ahora, ingrese el plazo en meses que desea cancelar (1-17):`;
+      return `Ahora, ingrese el plazo en meses que desea cancelar (6-12):`;
     }
     case "plazo": {
       const meses = parseInt(userMessage);
-      if (isNaN(meses) || meses < 1 || meses > 17) {
+      if (isNaN(meses) || meses < 6 || meses > 12) {
+        userStates[sender].retries += 1;
         return `❌ Plazo no válido. Intente de nuevo:`;
       }
       data.plazo_meses = meses; // Corregir aquí: cambiar plazo_mensual por plazo_meses
       const cuota = calculateMonthlyFee(data.monto, meses);
-      if (!cuota) return `❌ Error al calcular cuota. Intente con otro plazo.`;
+      if (!cuota) {
+        userStates[sender].retries += 1;
+        return `❌ Error al calcular cuota. Intente con otro plazo.`;}
       data.cuota_mensual = cuota;
       userStates[sender].state = "verificacion";
       return `${showVerification(data)}`;

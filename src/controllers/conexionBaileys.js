@@ -11,9 +11,9 @@ import directoryManager from '../config/directory.js';
 import { isInApplicationProcess } from '../utils/validate.js';
 import { logConversation } from '../utils/logger.js';
 import { userStateInit } from '../controllers/user.state.controller.js'
-import {messageCancel} from '../utils/message.js'
+import { messageCancel } from '../utils/message.js'
 import { documentIngress } from '../controllers/document.gateway.js';
-import { resetUserState } from './user.controller.js';
+import { resetUserState } from './user.state.controller.js';
 
 export const connectToWhatsApp = async (userStates, prompts, handlers) => {
   const {
@@ -68,15 +68,15 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
 
       // Manejo de recepción de documentos
       if (userStates[id].in_application && userStates[id].current_document) {
-         if (userStates[id].intents == 3) {
-                  userStates[id].state = "finished";
-                  userStates[id].in_application = false;
-                  delete userStates[id].timeout;
-                  delete userStates[id].intents;
-                  resetUserState(userStates, id);
-                  sock.sendMessage(id,{text:`❌ Demasiados intentos inválidos. Por favor, inicie el trámite nuevamente.\n\n${contentMenu}`});
-                  return;
-                }
+        if (userStates[id].intents == 3) {
+          userStates[id].state = "finished";
+          userStates[id].in_application = false;
+          delete userStates[id].timeout;
+          delete userStates[id].intents;
+          resetUserState(userStates, id);
+          sock.sendMessage(id, { text: `❌ Demasiados intentos inválidos. Por favor, inicie el trámite nuevamente.\n\n${contentMenu}` });
+          return;
+        }
         await documentIngress(userStates, message, sock);
       }
 
@@ -88,7 +88,8 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
 
       // Registrar la conversación
       logConversation(id, mensaje, "usuario");
-
+      console.log("Mensaje recibido:", mensaje);
+      console.log("Estado del usuario:", userStates[id].state);
       if (userStates[id].state === "INIT") {
         const num = parseInt(mensaje);
         if (!isNaN(num)) {
@@ -153,8 +154,13 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
             userStates,
             prompts
           )
-          : await handleUserMessage(id, mensaje);
+          : await handleUserMessage(id, mensaje, prompts ,userStates);
         console.log("Respuesta del bot:", respuesta);
+        await sock.sendMessage(id, { text: respuesta });
+        logConversation(id, respuesta, "bot");
+
+      } else if (userStates[id].state == "limit_retries") {
+        const respuesta = `⏳ Has alcanzado el límite de intentos, intente en unos minutos.`;
         await sock.sendMessage(id, { text: respuesta });
         logConversation(id, respuesta, "bot");
 

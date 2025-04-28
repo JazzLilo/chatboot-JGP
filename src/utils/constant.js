@@ -55,6 +55,7 @@ export const tabla_asesor = {
 };
 
 export const MAX_CANCEL_ATTEMPTS = 3;
+export const MAX_RETRIES = 3;
 
 export const DOCUMENT_TYPES = [
   { key: 'foto_ci_an', type: 'Foto CI Anverso' },

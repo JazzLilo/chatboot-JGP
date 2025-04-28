@@ -1,5 +1,5 @@
 import { calculateMonthlyFee, classifyYesNo, getRandomVariation } from '../config/utils.js';
-import { resetUserState } from '../controllers/user.controller.js';
+import { resetUserState } from '../controllers/user.state.controller.js';
 import { validateEmail, isInApplicationProcess } from '../utils/validate.js';
 import { showVerification } from '../utils/generate.js';
 import { connectToWhatsApp } from '../controllers/conexionBaileys.js'
@@ -10,7 +10,7 @@ import { classifyIntent } from '../controllers/gemini.controller.js';
 import { ApplicationData } from '../controllers/tratamientoBD.js'
 import fs from "fs";
 import { MAX_CANCEL_ATTEMPTS } from '../utils/constant.js'
-import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained } from '../utils/message.js';
+import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained, messageMaxRetry } from '../utils/message.js';
 import {
   getDocumentPrompt,
 } from '../utils/conversation.prompts.js';
@@ -278,17 +278,15 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
 // ------------ FUNCIÓN PARA GENERAR RESPUESTA (Gemini) -----------
 export const generateResponse = async (intent, userMessage, sender, prompts, userStates) => {
 
-  // Mapeo de intenciones a handlers
   const responseHandlers = {
     saludo: () => getRandomVariation(prompts.saludo),
     despedida: () => getRandomVariation(prompts.despedida),
-    prestamos: () => getRandomVariation(prompts.prestamos),
+    prestamos: async () => await handleVirtualApplication(sender, userMessage),
     informacion_general: () => getRandomVariation(prompts.informacion_general),
     sucursales_horarios: () => prompts.sucursales_horarios.content,
     servicios_ofrecidos: () => getRandomVariation(prompts.servicios_ofrecidos),
-    tramite_virtual: () => handleVirtualApplication(sender, userMessage),
+    tramite_virtual: async () => await handleVirtualApplication(sender, userMessage),
     requisitos: () => getRandomVariation(prompts.requisitos),
-    informacion_prestamos_asalariados: () => getRandomVariation(prompts.informacion_prestamos_asalariados),
     informacion_prestamos_no_asalariados: () => {
       const content = prompts.informacion_prestamos_no_asalariados.content || "";
       const sucursales = prompts.sucursales_horarios.content || "";
@@ -296,31 +294,40 @@ export const generateResponse = async (intent, userMessage, sender, prompts, use
     },
     requisitos_tramite: () => getRandomVariation(prompts.requisitos_tramite),
     chatbot: () => getRandomVariation(prompts.chatbot),
-    cancelar: () => handleCancel(sender)
+    cancelar: () => handleCancel(sender, userStates)
   };
+  const getResponse = responseHandlers[intent] || (() => getRandomVariation(prompts.otra_informacion));
+  const { state } = userStates[sender] || {};
+  const inProcess = await isInApplicationProcess(userStates, sender);
 
-  // Obtener el handler o usar el default
-  const handler = responseHandlers[intent] ||
-    (() => getRandomVariation(prompts.otra_informacion));
 
-  let baseResponse = handler();
-  // Añadir menú si no está en proceso de trámite
-  if (!userStates[sender]) baseResponse = `${baseResponse}\n${contentMenu}`;
-  const { in_application, state } = userStates[sender] || {};
-  if (!in_application && state === "finished") {
-    baseResponse = `${baseResponse}\n${contentMenu}`;
+  const response = await getResponse();
+  console.log(`Intento: ${intent}, Respuesta: ${response}, Estado: ${state}, En Proceso: ${inProcess}`);
+
+  let finalResponse = response;
+
+  if (!inProcess && state !== "finished") {
+    finalResponse += `\n${contentMenu}`;
   }
 
-  return baseResponse;
-}
+  if (!inProcess && state === "baned") {
+    finalResponse += `\n${messageCancelFull}`;
+  }
+
+  if (state === "limit_retries") {
+    return `${messageMaxRetry}`;
+  }
+
+  return finalResponse;
+};
 
 // ------------ FUNCIÓN PARA MANEJAR LA CANCELACIÓN -----------
 export const handleCancel = async (sender, userStates) => {
   console.log(`Manejo de cancelación para el usuario: ${sender}`);
   if (!userStates[sender]) return `${messageNotTrained} \n\n${contentMenu}`;
-  
+
   const { cancelAttempts } = userStates[sender];
-  
+
   console.log(`Intentos de cancelación: ${cancelAttempts}`);
   //if (cancelAttempts) userStates[sender].cancelAttempts = 0;
   const cancel_count_temp = userStates[sender].cancelAttempts += 1;
@@ -333,9 +340,10 @@ export const handleCancel = async (sender, userStates) => {
 }
 
 // ------------ FUNCIÓN CENTRALIZADA PARA MANEJO DE MENSAJES -----------
-export const handleUserMessage = async (sender, message) => {
+export const handleUserMessage = async (sender, message, prompts,userStates) => {
   const intent = await classifyIntent(message);
-  const respuesta = await generateResponse(intent, message, sender);
+  const respuesta = await generateResponse(intent, message, sender, prompts,userStates);
+  console.log(`Intento: ${intent}, Respuesta: ${respuesta}`);
   logConversation(sender, message, "usuario");
   logConversation(sender, respuesta, "bot");
   return respuesta;
