@@ -1,29 +1,21 @@
-import { ApplicationData } from './tratamientoBD.js'
-import fs from 'fs';
-import path from 'path';
+
 import {
   makeWASocket,
   useMultiFileAuthState,
   DisconnectReason,
-  downloadMediaMessage
 } from "@whiskeysockets/baileys";
-import directoryManager from '../config/directory.js';
 import { isInApplicationProcess } from '../utils/validate.js';
 import { logConversation } from '../utils/logger.js';
 import { userStateInit } from '../controllers/user.state.controller.js'
-import { messageCancel } from '../utils/message.js'
+import { contentMenu, messageCancel } from '../utils/message.js'
 import { documentIngress } from '../controllers/document.gateway.js';
-import { resetUserState } from './user.state.controller.js';
+import { resetUserState } from '../controllers/user.state.controller.js';
+import { generateResponse, handleVirtualApplication, continueVirtualApplication, handleUserMessage  } from '../controllers/conversation.controller.js';
+import { classifyIntent } from '../controllers/gemini.controller.js';
+import { getRandomVariation } from '../config/utils.js'
 
 export const connectToWhatsApp = async (userStates, prompts, handlers) => {
   const {
-    handleVirtualApplication,
-    handleUserMessage,
-    generateResponse,
-    classifyIntent,
-    contentMenu,
-    getRandomVariation,
-    continueVirtualApplication  // Añadimos esta línea
   } = handlers;
 
   console.log("Iniciando conexión con WhatsApp...");
@@ -146,7 +138,7 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
         const enTramite = isInApplicationProcess(userStates, id);
         console.log("Estado del usuario:", userStates);
         const respuesta = enTramite
-          ? await handlers.continueVirtualApplication(
+          ? await continueVirtualApplication(
             userStates[id].state,
             userData,
             id,
