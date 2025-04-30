@@ -184,8 +184,7 @@ Responde únicamente con:
     case "boleta_pago1":
     case "boleta_pago2":
     case "boleta_pago3":
-      return `Analiza si esta imagen corresponde a una boleta de pago reciente, legible y válida.
-La fecha de hoy es ${dateToday}.
+      return `Analiza si esta imagen corresponde a una boleta de pago es legible y válida.
 
 Responde únicamente con:
 "si" o "no"`;
