@@ -15,7 +15,7 @@ export const loadPrompt = (filePath) => {
         const json = JSON.parse(data);
         // console.log(`Prompt cargado desde ${filePath}:`, json); // Log de depuración
         return json;
-    } catch (error) {
+    }catch (error) {
         console.error(`Error al cargar el prompt desde ${filePath}:`, error);
         throw error; // Lanzar el error para manejarlo donde se llame la función
     }

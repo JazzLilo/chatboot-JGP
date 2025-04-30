@@ -155,7 +155,7 @@ export const dateFormatToday = () => {
 
 
 export const getValidationPromptFromKey = (documentKey) => {
-  
+
   const dateToday = new Date().toISOString().split('T')[0];
   switch (documentKey) {
     case "foto_ci_an":
@@ -198,8 +198,7 @@ Responde únicamente con:
 "si" o "no"`;
 
     case "gestora_publica_afp":
-      return `Verifica si este archivo PDF corresponde a un documento de la Gestora Pública AFP.
-La fecha de hoy es ${dateToday}.
+      return `Verifica si este archivo PDF corresponde a un documento a alguna gestora de AFP.
 
 Responde únicamente con:
 "si" o "no"`;
@@ -207,7 +206,7 @@ Responde únicamente con:
       return `No es obligadorio. si el usuario mando saltar, no es necesario que lo analices. Retorna si`
 
     default:
-      return `Analiza si el documento enviado es válido, legible y corresponde al tipo solicitado.
+      return `Analiza si el documento enviado es legible y corresponde al tipo solicitado.
 La fecha de hoy es ${dateToday}.
 
 Responde únicamente con:

@@ -7,7 +7,6 @@
  * - conexionBaileys.js: Maneja la conexión y comunicación con WhatsApp
  * - user.*.js: Gestiona el estado, los datos y las conversaciones de usuarios
  *   - user.controller.js: Controlador de usuario
- *   - user.data.controller.js: Controlador de datos de usuario
  *   - user.state.controller.js: Controlador de estado de usuario
  * - document.*.js: Maneja el procesamiento, la validacion y almacenamiento de documentos
  *   - document.process.controller.js: Controlador de procesamiento de documentos

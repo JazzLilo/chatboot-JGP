@@ -17,6 +17,8 @@ export const messageCancelFull = '✅ Tu solicitud ha sido cancelada exitosament
 
 export const messageRequestFile = '❌ Por favor, envíe un archivo (imagen, documento PDF u otro formato).' 
 
+export const messageMaxRetry = '❌ Demasiados intentos inválidos. Por favor, inicie el trámite nuevamente.'
+
 export const messageRequestFileSuccess = (file_name) =>
   `✅ ${file_name} recibido correctamente.`;
 
