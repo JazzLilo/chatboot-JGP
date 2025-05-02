@@ -13,12 +13,13 @@ import {
   getDocumentPrompt,
 } from '../utils/conversation.prompts.js';
 
-import { getLatLongFromLink} from '../controllers/gemini.controller.js'
+import { getLatLongFromLink } from '../controllers/gemini.controller.js'
 
 
 import { map } from '../utils/prompt.js';
 import { getDocumentState, documentsFlow } from '../utils/document.flow.js'
 
+import { userRetryMessage } from './user.messages.controller.js';
 
 export const continueVirtualApplication = async (state, data, sender, userMessage, userStates, prompts) => {
   console.log('****************************************************************');
@@ -29,12 +30,6 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     userStateBaned(userStates, sender);
 
     return `❌ Has alcanzado el límite de intentos de cancelación. Intenta nuevamente en unos minutos.`;
-  }
-
-  if (userStates[sender].retries >= MAX_RETRIES) {
-    console.log(`Usuario ${sender} ha alcanzado el límite de intentos.`);
-    userStateExededRetryLimit(userStates, sender);
-    return `❌ Has alcanzado el límite de intentos. Por favor, intenta nuevamente más tarde.`;
   }
 
   // Permite cancelar en cualquier momento
@@ -62,62 +57,60 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
         userStates[sender].retries = 0;
         return `Ingrese su nombre completo:`;
       } else if (respuesta === false) {
-
         const message = `❌ Lo sentimos, por ahora solo prestamos para asalariados. Aquí tienes más información:\n\n${getRandomVariation(prompts["requisitos"])}`;
         userStates[sender].state = "INIT";
+        userStates[sender].retries = 0;
         return message ? `${message}\n\n` : `${contentMenu}`;
       } else {
-        userStates[sender].retries += 1;
-        return `❓ Por favor, responda Sí o No. Intentos: ${userStates[sender].retries}/3.`;
+        return userRetryMessage(userStates, sender, `❓ Responda Sí✔️ o No❌.`);
       }
     }
     case "nombre": {
-      if (!userMessage.trim()) return `❌ Nombre no válido. Intente de nuevo:`;
+      if (!userMessage.trim()) return userRetryMessage(userStates, sender, `❌ Nombre no válido. Intente de nuevo. `);
       data.nombre_completo = userMessage.trim();
       userStates[sender].state = "cedula";
+      userStates[sender].retries = 0;
       return `Perfecto, ${data.nombre_completo}.\nAhora, ingrese su numero de ci (ej: 123456):`;
     }
     case "cedula": {
       if (!/^\d+$/.test(userMessage) || userMessage.length < 5) {
-       
-        userStates[sender].retries += 1;
-        return `❌ Cédula no válida. Intente de nuevo:`;
+        return userRetryMessage(userStates, sender,`❌ Cédula no válida. Intente de nuevo:`);
       }
       data.cedula = userMessage;
       userStates[sender].state = "direccion";
+      userStates[sender].retries = 0;
       return `Ahora, ingrese su dirección:`;
     }
     case "direccion": {
-      if (!userMessage.trim()){
-        
-        userStates[sender].retries += 1;
-        return `❌ Dirección no válida. Intente de nuevo:`;
+      if (!userMessage.trim()) {
+        return userRetryMessage(userStates, sender,`❌ Dirección no válida. Intente de nuevo:`);
       }
       data.direccion = userMessage.trim();
       userStates[sender].state = "enlace_maps";
+      userStates[sender].retries = 0;
       return `Entendido, ahora comparta la ubicacion mediante un url de maps o escriba omitir:`;
     }
     case "enlace_maps": {
-      if (userMessage.toLowerCase() === "omitir") {  data.latitud  = 0; data.longitud = 0; userStates[sender].state = "email";   return `Ubicación omitida. Perfecto, ahora ingrese su email:`;}
+      if (userMessage.toLowerCase() === "omitir") { data.latitud = 0; data.longitud = 0; userStates[sender].state = "email"; return `Ubicación omitida. Perfecto, ahora ingrese su email:`; }
       const link = userMessage.trim();
       console.log(link);
       const coords = await getLatLongFromLink(link);
       if (!coords) {
-        userStates[sender].retries += 1;
-        return `❌ Enlace no válido o no se pudo extraer coordenadas. Intente de nuevo:`;
+        return userRetryMessage(userStates, sender, `❌ Enlace no válido o no se pudo extraer coordenadas. Intente de nuevo:`);
       }
-      data.latitud  = coords.latitude;
+      data.latitud = coords.latitude;
       data.longitud = coords.longitude;
       userStates[sender].state = "email";
+      userStates[sender].retries = 0;
       return `Perfecto, ahora ingrese su email:`;
     }
     case "email": {
       if (!validateEmail(userMessage)) {
-        userStates[sender].retries += 1;
-        return `❌ Email no válido. Intente de nuevo:`;
+        return userRetryMessage(userStates, sender,`❌ Email no válido. Intente de nuevo:`);
       }
       data.email = userMessage.trim();
       userStates[sender].state = "monto";
+      userStates[sender].retries = 0;
       return `Ahora, ingrese el monto solicitado (ej: 5000):`;
     }
     case "monto": {
@@ -126,28 +119,28 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
 
       // Validar que sea un número dentro del rango permitido
       if (isNaN(val) || val < 1000 || val > 10000) {
-        userStates[sender].retries += 1;
-        return `❌ Monto no válido. Por favor, ingrese un monto entre 1,000 a 100,000`;
+        return userRetryMessage(userStates, sender,`❌ Monto no válido. Por favor, ingrese un monto entre 1,000 a 100,000`);
       }
 
       // Guardar el monto si es válido
       data.monto = val;
       userStates[sender].state = "plazo";
+      userStates[sender].retries = 0;
       return `Ahora, ingrese el plazo en meses que desea cancelar (6-12):`;
     }
     case "plazo": {
       const meses = parseInt(userMessage);
       if (isNaN(meses) || meses < 6 || meses > 12) {
-        userStates[sender].retries += 1;
-        return `❌ Plazo no válido. Intente de nuevo:`;
+        return userRetryMessage(userStates, sender,`❌ Plazo no válido. Intente de nuevo:`);
       }
       data.plazo_meses = meses; // Corregir aquí: cambiar plazo_mensual por plazo_meses
       const cuota = calculateMonthlyFee(data.monto, meses);
       if (!cuota) {
-        userStates[sender].retries += 1;
-        return `❌ Error al calcular cuota. Intente con otro plazo.`;}
+        return userRetryMessage(userStates, sender,`❌ Error al calcular cuota. Intente con otro plazo.`);
+      }
       data.cuota_mensual = cuota;
       userStates[sender].state = "verificacion";
+      userStates[sender].retries = 0;
       return `${showVerification(data)}`;
     }
     case "verificacion": {
@@ -160,9 +153,11 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
         const firstKey = documentsFlow[0].key;
         userStates[sender].state = getDocumentState(firstKey);
         userStates[sender].current_document = firstKey;
+        userStates[sender].retries = 0;
         return getDocumentPrompt(firstKey);
       } else if (resp === false) {
         userStates[sender].state = "correccion";
+        userStates[sender].retries = 0;
         return `🔄 ¿Qué dato deseas corregir?\n1️⃣ Nombre\n2️⃣ Cédula\n3️⃣ Dirección\n4️⃣ Email\n5️⃣ Monto\n6️⃣ Plazo\n(Escribe el número de la opción o 'cancelar' para terminar.)`;
       } else {
         return `❓ Responda Sí✔️ o No❌.`;
@@ -171,7 +166,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     case "correccion": {
       const opcion = parseInt(userMessage);
       if (![1, 2, 3, 4, 5, 6, 7].includes(opcion)) {
-        return `❌ Opción no válida, intente de nuevo:`;
+        return userRetryMessage(userStates, sender,`❌ Opción no válida, intente de nuevo:`);
       }
 
       userStates[sender].state = map[opcion];
@@ -193,16 +188,16 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       switch (field) {
         case "nombre":
           if (!userMessage.trim())
-            return `❌ Nombre inválido, intente de nuevo:`;
+            return userRetryMessage(userStates, sender, `❌ Nombre inválido, intente de nuevo:`);
           data.nombre_completo = userMessage.trim();
           break;
         case "cedula":
           if (!/^\d+$/.test(userMessage) || userMessage.length < 5)
-            return `❌ Cédula no válida:`;
+            return userRetryMessage(userStates, sender, `❌ Cédula no válida:`);
           data.cedula = userMessage;
           break;
         case "direccion":
-          if (!userMessage.trim()) return `❌ Dirección no válida:`;
+          if (!userMessage.trim()) return userRetryMessage(userStates, sender,`❌ Dirección no válida:`);
           data.direccion = userMessage.trim();
           break;
         case "enlace_maps":
@@ -213,18 +208,18 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
           }
           const link = userMessage.trim();
           const coords = await getLatLongFromLink(link);
-          if (!coords) return `❌ Enlace no válido:`;
+          if (!coords) return userRetryMessage(userStates, sender, `❌ Enlace no válido:`);
           data.latitud = coords.latitude;
           data.longitud = coords.longitude;
           break;
         case "email":
-          if (!validateEmail()) return `❌ Email no válido:`;
+          if (!validateEmail()) return userRetryMessage(userStates, sender, `❌ Email no válido:`);
           data.email = userMessage.trim();
           break;
         case "monto":
           const val = parseFloat(userMessage.replace(/[^0-9.]/g, ""));
           if (isNaN(val) || val < 1000 || val > 100000)
-            return `❌ Monto no válido. Por favor, ingrese un monto entre 1,000 y 100,000. Ejemplo: 5000 o 15,000.`;
+            return userRetryMessage(userStates, sender, `❌ Monto no válido. Por favor, ingrese un monto entre 1,000 y 100,000. Ejemplo: 5000 o 15,000.`);
           data.monto = val;
           data.cuota_mensual = calculateMonthlyFee(
             data.monto,
@@ -234,12 +229,12 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
         case "plazo":
           const meses = parseInt(userMessage);
           if (isNaN(meses) || meses < 1 || meses > 24)
-            return `❌ Plazo no válido. Intente de nuevo:`;
+            return userRetryMessage(userStates, sender, `❌ Plazo no válido. Intente de nuevo:`);
           data.plazo_mensual = meses;
           data.cuota_mensual = calculateMonthlyFee(data.monto, meses);
           break;
         default:
-          return `❌ Campo desconocido. Intente de nuevo:`;
+          return userRetryMessage(userStates, sender, `❌ Campo desconocido. Intente de nuevo:`);
       }
 
       userStates[sender].state = "verificacion";
@@ -305,7 +300,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
 
 // ------------ FUNCIÓN PARA GENERAR RESPUESTA (Gemini) -----------
 export const generateResponse = async (intent, userMessage, sender, prompts, userStates) => {
- 
+
   const responseHandlers = {
     saludo: () => getRandomVariation(prompts.saludo),
     despedida: () => getRandomVariation(prompts.despedida),
@@ -333,7 +328,9 @@ export const generateResponse = async (intent, userMessage, sender, prompts, use
   console.log(`Intento: ${intent}, Respuesta: ${response}, Estado: ${state}, En Proceso: ${inProcess}`);
 
   let finalResponse = response;
-
+  if (intent === "despedida") {
+    return finalResponse
+  }
   if (!inProcess && state !== "finished") {
     finalResponse += `\n${contentMenu}`;
   }
@@ -368,9 +365,9 @@ export const handleCancel = async (sender, userStates) => {
 }
 
 // ------------ FUNCIÓN CENTRALIZADA PARA MANEJO DE MENSAJES -----------
-export const handleUserMessage = async (sender, message, prompts,userStates) => {
+export const handleUserMessage = async (sender, message, prompts, userStates) => {
   const intent = await classifyIntent(message);
-  const respuesta = await generateResponse(intent, message, sender, prompts,userStates);
+  const respuesta = await generateResponse(intent, message, sender, prompts, userStates);
   console.log(`Intento: ${intent}, Respuesta: ${respuesta}`);
   logConversation(sender, message, "usuario");
   logConversation(sender, respuesta, "bot");

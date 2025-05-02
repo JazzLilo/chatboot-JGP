@@ -76,9 +76,12 @@ export const userStateExededRetryLimit = (userStates, sender) => {
     userStates[sender].in_application = false;
     setTimeout(() => {
         userStates[sender].cancelAttempts = 0;
+        userStates[sender].retries = 0;
+        userStates[sender].intents = 0;
         resetUserState(userStates, sender);
         console.log(`🔄 Estado del usuario ${sender} reiniciado tras 1 minutos.`);
     }, 1 * 60 * 1000); // 5 minutos
+    return `Intente`
 }
 
 export const resetUserState = (userStates, sender, message = null) => {

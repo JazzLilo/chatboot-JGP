@@ -21,6 +21,7 @@ import {
     getDocumentState,
     getNextDocumentKey
  } from '../utils/document.flow.js'
+import { userStateExededRetryLimit } from '../controllers/user.state.controller.js';
 
 /**
  * Orquesta la recepción y validación de documentos en WhatsApp.
@@ -114,6 +115,13 @@ async function handleValidationResult(result, key, userState, userStates, sock, 
         }
     } else {
         userStates[id].intents += 1
+        if (userStates[id].intents >= 3) {
+            
+            userStateExededRetryLimit(userStates, id);
+            await sock.sendMessage(id, {
+                text: '❌ Has alcanzado el límite de intentos. Por favor, intenta nuevamente en unos minutos.'
+            });
+        }
         console.log("//*******************************")
         console.log(userStates[id].intents)
         await sock.sendMessage(id, {
