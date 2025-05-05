@@ -7,7 +7,7 @@ Analiza el siguiente mensaje y clasifícalo en una de estas categorías:
 - saludo: cualquier forma de iniciar una conversación o saludar.
 - despedida: cualquier forma de terminar una conversación o agradecer.
 - prestamos: preguntas sobre préstamos, creditos.
-- informacion_general: consultas sobre la empresa, su historia, valores o información general.
+- informacion_general: consultas sobre la empresa, su historia, valores o si necesita información general.
 - sucursales_horarios: preguntas sobre ubicaciones, horarios de atención o direcciones, dar toda la información.
 - servicios_ofrecidos: preguntas sobre productos, servicios o qué ofrece la empresa.
 - tramite_virtual: si el usuario menciona o pregunta sobre realizar el trámite virtual o en línea.

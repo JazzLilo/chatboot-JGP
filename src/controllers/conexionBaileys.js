@@ -76,12 +76,14 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
       const mensaje = message.message?.conversation ||
         message.message?.extendedTextMessage?.text ||
         message.message?.documentMessage?.caption ||
+        message.message?.locationMessage ||
         "";
 
       // Registrar la conversación
       logConversation(id, mensaje, "usuario");
       console.log("Mensaje recibido:", mensaje);
       console.log("Estado del usuario:", userStates[id].state);
+     
       if (userStates[id].state === "INIT") {
         const num = parseInt(mensaje);
         if (!isNaN(num)) {

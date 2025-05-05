@@ -29,10 +29,10 @@ import { userStateExededRetryLimit } from '../controllers/user.state.controller.
 export const documentIngress = async (userStates, message, sock) => {
     const id = message.key.remoteJid;
     const userState = userStates[id] || userStateInit(id);
-
+    console.log(message.message.extendedTextMessage?.text)
+    if ( message.message.extendedTextMessage?.text.toLowerCase().includes("cancelar")) return; 
     if (!isMediaMessage(message)) {
         userStates[id].intents += 1
-        console.log("//*******************************")
         console.log(userStates[id].intents)
         return sendRequestFileMessage(sock, id);
     }
@@ -51,7 +51,6 @@ export const documentIngress = async (userStates, message, sock) => {
         await handleValidationResult(result, key, userState, userStates, sock, id);
     } catch (error) {
         userStates[sender].intents += 1
-        console.log("//*******************************")
         console.log(userStates[sender].intents)
         console.error(`Error en documentIngress [${id}]:`, error);
         await sock.sendMessage(id, { text: messageProcessFileError });
@@ -122,7 +121,6 @@ async function handleValidationResult(result, key, userState, userStates, sock, 
                 text: '❌ Has alcanzado el límite de intentos. Por favor, intenta nuevamente en unos minutos.'
             });
         }
-        console.log("//*******************************")
         console.log(userStates[id].intents)
         await sock.sendMessage(id, {
             text: messageRequestFileError(getDocumentDescription(key))

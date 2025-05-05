@@ -31,14 +31,16 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
 
     return `❌ Has alcanzado el límite de intentos de cancelación. Intenta nuevamente en unos minutos.`;
   }
+  // preguntar si es objeto
+  if (typeof userMessage != "object") {
+    // Permite cancelar en cualquier momento
+    if (userMessage.toLowerCase().includes("cancelar")) {
+      console.log('UserStates:', userStates);
+      handleCancel(sender, userStates)
 
-  // Permite cancelar en cualquier momento
-  if (userMessage.toLowerCase().includes("cancelar")) {
-    console.log('UserStates:', userStates);
-    handleCancel(sender, userStates)
-
-    console.log('Cancelación exitosa', userStates);
-    return `✅ Has cancelado tu solicitud. Puedes iniciar nuevamente el trámite en cualquier momento.\n\n${contentMenu}`;
+      console.log('Cancelación exitosa', userStates);
+      return `✅ Has cancelado tu solicitud. Puedes iniciar nuevamente el trámite en cualquier momento.\n\n${contentMenu}`;
+    }
   }
 
   // Verifica si el usuario está en el flujo de documentos
@@ -66,7 +68,10 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       }
     }
     case "nombre": {
-      if (!userMessage.trim()) return userRetryMessage(userStates, sender, `❌ Nombre no válido. Intente de nuevo. `);
+      const nombre = userMessage.trim();
+      const esnombreValida = /^[a-zA-ZÁÉÍÓÚÑáéíóúñ0-9\s]{5,}$/g.test(nombre) &&
+                                /\D/.test(nombre); 
+      if (!esnombreValida) return userRetryMessage(userStates, sender, `❌ Nombre no válido. Intente de nuevo. `);
       data.nombre_completo = userMessage.trim();
       userStates[sender].state = "cedula";
       userStates[sender].retries = 0;
@@ -74,7 +79,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     }
     case "cedula": {
       if (!/^\d+$/.test(userMessage) || userMessage.length < 5) {
-        return userRetryMessage(userStates, sender,`❌ Cédula no válida. Intente de nuevo:`);
+        return userRetryMessage(userStates, sender, `❌ Cédula no válida. Intente de nuevo:`);
       }
       data.cedula = userMessage;
       userStates[sender].state = "direccion";
@@ -82,31 +87,50 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       return `Ahora, ingrese su dirección:`;
     }
     case "direccion": {
-      if (!userMessage.trim()) {
-        return userRetryMessage(userStates, sender,`❌ Dirección no válida. Intente de nuevo:`);
+      const direccion = userMessage.trim();
+      const esDireccionValida = /^[a-zA-ZÁÉÍÓÚÑáéíóúñ0-9\s]{3,}$/g.test(direccion) &&
+                                /\D/.test(direccion); 
+      if (!esDireccionValida) {
+        return userRetryMessage(userStates, sender, `❌ Dirección no válida. Por favor, ingresa una zona o barrio.`);
       }
-      data.direccion = userMessage.trim();
+      userStates[sender].direccion = direccion;
       userStates[sender].state = "enlace_maps";
-      userStates[sender].retries = 0;
-      return `Entendido, ahora comparta la ubicacion mediante un url de maps o escriba omitir:`;
+      return "📍 Gracias. Si deseas, puedes compartir tu ubicación (o escribe *omitir* para continuar sin ella):";
     }
     case "enlace_maps": {
-      if (userMessage.toLowerCase() === "omitir") { data.latitud = 0; data.longitud = 0; userStates[sender].state = "email"; return `Ubicación omitida. Perfecto, ahora ingrese su email:`; }
-      const link = userMessage.trim();
-      console.log(link);
-      const coords = await getLatLongFromLink(link);
-      if (!coords) {
-        return userRetryMessage(userStates, sender, `❌ Enlace no válido o no se pudo extraer coordenadas. Intente de nuevo:`);
+      const location = userMessage;
+      if (typeof userMessage != "object") {
+        if (userMessage.toLowerCase() === "omitir") {
+          userStates[sender].latitud = 0;
+          userStates[sender].longitud = 0;
+          userStates[sender].state = "email";
+          return "Ubicación omitida. Perfecto, ahora ingrese su email:";
+        }
       }
-      data.latitud = coords.latitude;
-      data.longitud = coords.longitude;
-      userStates[sender].state = "email";
-      userStates[sender].retries = 0;
-      return `Perfecto, ahora ingrese su email:`;
+
+      if (location) {
+        const { degreesLatitude, degreesLongitude } = location;
+        userStates[sender].latitud = degreesLatitude;
+        userStates[sender].longitud = degreesLongitude;
+        console.log("Ubicación recibida:", userStates[sender].latitud, userStates[sender].longitud);
+        userStates[sender].state = "email";
+        return "📍 Ubicación recibida correctamente. Ahora ingrese su email:";
+      }
+
+      // Si no es ubicación ni 'omitir', se asume que es un enlace
+      const coords = await getLatLongFromLink(userMessage);
+      if (!coords) {
+        return "❌ Enlace no válido o no se pudo extraer coordenadas. Intente de nuevo:";
+      }
+
+      userStates[sender].latitud = coords.latitude;
+      userStates[sender].longitud = coords.longitude;
+      userStates[id].state = "email";
+      return "Perfecto, ahora ingrese su email:";
     }
     case "email": {
       if (!validateEmail(userMessage)) {
-        return userRetryMessage(userStates, sender,`❌ Email no válido. Intente de nuevo:`);
+        return userRetryMessage(userStates, sender, `❌ Email no válido. Intente de nuevo:`);
       }
       data.email = userMessage.trim();
       userStates[sender].state = "monto";
@@ -119,7 +143,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
 
       // Validar que sea un número dentro del rango permitido
       if (isNaN(val) || val < 1000 || val > 10000) {
-        return userRetryMessage(userStates, sender,`❌ Monto no válido. Por favor, ingrese un monto entre 1,000 a 100,000`);
+        return userRetryMessage(userStates, sender, `❌ Monto no válido. Por favor, ingrese un monto entre 1,000 a 100,000`);
       }
 
       // Guardar el monto si es válido
@@ -131,12 +155,12 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     case "plazo": {
       const meses = parseInt(userMessage);
       if (isNaN(meses) || meses < 6 || meses > 12) {
-        return userRetryMessage(userStates, sender,`❌ Plazo no válido. Intente de nuevo:`);
+        return userRetryMessage(userStates, sender, `❌ Plazo no válido. Intente de nuevo:`);
       }
       data.plazo_meses = meses; // Corregir aquí: cambiar plazo_mensual por plazo_meses
       const cuota = calculateMonthlyFee(data.monto, meses);
       if (!cuota) {
-        return userRetryMessage(userStates, sender,`❌ Error al calcular cuota. Intente con otro plazo.`);
+        return userRetryMessage(userStates, sender, `❌ Error al calcular cuota. Intente con otro plazo.`);
       }
       data.cuota_mensual = cuota;
       userStates[sender].state = "verificacion";
@@ -166,7 +190,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     case "correccion": {
       const opcion = parseInt(userMessage);
       if (![1, 2, 3, 4, 5, 6, 7].includes(opcion)) {
-        return userRetryMessage(userStates, sender,`❌ Opción no válida, intente de nuevo:`);
+        return userRetryMessage(userStates, sender, `❌ Opción no válida, intente de nuevo:`);
       }
 
       userStates[sender].state = map[opcion];
@@ -197,20 +221,34 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
           data.cedula = userMessage;
           break;
         case "direccion":
-          if (!userMessage.trim()) return userRetryMessage(userStates, sender,`❌ Dirección no válida:`);
+          if (!userMessage.trim()) return userRetryMessage(userStates, sender, `❌ Dirección no válida:`);
           data.direccion = userMessage.trim();
           break;
         case "enlace_maps":
-          if (userMessage.toLowerCase() === "omitir") {
-            data.latitud = 0;
-            data.longitud = 0;
-            break;
+          const location = userMessage;
+          if (typeof userMessage != "object") {
+            if (userMessage.toLowerCase() === "omitir") {
+              userStates[sender].latitud = 0;
+              userStates[sender].longitud = 0;
+              break
+            }
           }
-          const link = userMessage.trim();
-          const coords = await getLatLongFromLink(link);
-          if (!coords) return userRetryMessage(userStates, sender, `❌ Enlace no válido:`);
-          data.latitud = coords.latitude;
-          data.longitud = coords.longitude;
+          if (location) {
+            const { degreesLatitude, degreesLongitude } = location;
+            userStates[sender].latitud = degreesLatitude;
+            userStates[sender].longitud = degreesLongitude;
+            console.log("Ubicación recibida:", userStates[sender].latitud, userStates[sender].longitud);
+            break
+          }
+
+          // Si no es ubicación ni 'omitir', se asume que es un enlace
+          const coords = await getLatLongFromLink(userMessage);
+          if (!coords) {
+            return "❌ Enlace no válido o no se pudo extraer coordenadas. Intente de nuevo:";
+          }
+
+          userStates[sender].latitud = coords.latitude;
+          userStates[sender].longitud = coords.longitude;
           break;
         case "email":
           if (!validateEmail()) return userRetryMessage(userStates, sender, `❌ Email no válido:`);
