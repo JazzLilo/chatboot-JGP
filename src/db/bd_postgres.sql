@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS solicitud (
     id SERIAL PRIMARY KEY, -- Usar SERIAL para generación automática de IDs
     nombre_completo VARCHAR(100) NOT NULL,
-    cedula VARCHAR(20) NOT NULL UNIQUE,
+    cedula VARCHAR(20) NOT NULL,
     direccion VARCHAR(200) NOT NULL,
     email VARCHAR(100) NOT NULL,
     monto DECIMAL(10,2) NOT NULL,
