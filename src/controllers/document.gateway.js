@@ -29,8 +29,10 @@ import { userStateExededRetryLimit } from '../controllers/user.state.controller.
 export const documentIngress = async (userStates, message, sock) => {
     const id = message.key.remoteJid;
     const userState = userStates[id] || userStateInit(id);
-    console.log(message.message.extendedTextMessage?.text)
-    if ( message.message.extendedTextMessage?.text.toLowerCase().includes("cancelar")) return; 
+    console.log('*-*-*-**-*-*-*-*-*-*-*-*')
+    console.log(message.message.conversation?.toLowerCase().includes("cancelar"))
+    console.log('*-*-*-**-*-*-*-*-*-*-*-*')
+    if ( message.message.conversation?.toLowerCase().includes("cancelar")) { console.log('******--------*********'); return}; 
     if (!isMediaMessage(message)) {
         userStates[id].intents += 1
         console.log(userStates[id].intents)

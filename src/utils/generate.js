@@ -24,3 +24,12 @@ export const showVerification = (data) => {
 
 ¿Son correctos? (Sí/No)`;
 }
+
+export const showValidationCuota = (data) => {
+  return `📋 *Verifique los datos:*
+- 1️⃣*Monto:* Bs. ${data.monto}
+- 2️⃣*Plazo:* ${data.plazo_meses} meses
+- 3️⃣*Cuota:* Bs. ${data.cuota_mensual}
+
+En caso de estar de acuerdo, envié (si/no) para continuar ...`; 
+}

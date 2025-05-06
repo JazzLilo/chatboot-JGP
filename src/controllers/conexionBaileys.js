@@ -69,6 +69,7 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
           sock.sendMessage(id, { text: `❌ Demasiados intentos inválidos. Por favor, inicie el trámite nuevamente.\n\n${contentMenu}` });
           return;
         }
+        console.log("Recibiendo documento:", userStates[id].current_document);
         await documentIngress(userStates, message, sock);
       }
 

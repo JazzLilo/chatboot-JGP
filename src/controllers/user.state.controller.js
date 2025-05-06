@@ -67,7 +67,7 @@ export const userStateBaned = (userStates, sender) => {
         userStates[sender].cancelAttempts = 0;
         resetUserState(userStates, sender);
         console.log(`🔄 Estado del usuario ${sender} reiniciado tras 1 minutos.`);
-    }, 1 * 60 * 1000); // 5 minutos
+    }, 1 * 60 * 1000); 
 
 }
 
@@ -80,7 +80,7 @@ export const userStateExededRetryLimit = (userStates, sender) => {
         userStates[sender].intents = 0;
         resetUserState(userStates, sender);
         console.log(`🔄 Estado del usuario ${sender} reiniciado tras 1 minutos.`);
-    }, 1 * 60 * 1000); // 5 minutos
+    }, 1 * 60 * 1000);
     return `Intente`
 }
 

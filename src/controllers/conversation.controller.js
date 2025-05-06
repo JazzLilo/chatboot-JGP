@@ -2,7 +2,7 @@ import { MAX_CANCEL_ATTEMPTS, MAX_RETRIES } from '../utils/constant.js'
 import { calculateMonthlyFee, classifyYesNo, getRandomVariation } from '../config/utils.js';
 import { userStateVerifyAsalariado, userStateBaned, resetUserState, userStateExededRetryLimit } from '../controllers/user.state.controller.js';
 import { validateEmail, isInApplicationProcess } from '../utils/validate.js';
-import { showVerification } from '../utils/generate.js';
+import { showVerification, showValidationCuota } from '../utils/generate.js';
 import directoryManager from '../config/directory.js';
 import { saveApplicationData } from '../controllers/user.data.controller.js';
 import { logConversation } from '../utils/logger.js'
@@ -93,6 +93,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       if (!esDireccionValida) {
         return userRetryMessage(userStates, sender, `❌ Dirección no válida. Por favor, ingresa una zona o barrio.`);
       }
+      data.direccion = direccion;
       userStates[sender].direccion = direccion;
       userStates[sender].state = "enlace_maps";
       return "📍 Gracias. Si deseas, puedes compartir tu ubicación (o escribe *omitir* para continuar sin ella):";
@@ -101,6 +102,8 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       const location = userMessage;
       if (typeof userMessage != "object") {
         if (userMessage.toLowerCase() === "omitir") {
+          data.latitud = 0;
+          data.longitud = 0;
           userStates[sender].latitud = 0;
           userStates[sender].longitud = 0;
           userStates[sender].state = "email";
@@ -110,6 +113,8 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
 
       if (location) {
         const { degreesLatitude, degreesLongitude } = location;
+        data.latitud = degreesLatitude;
+        data.longitud = degreesLongitude;
         userStates[sender].latitud = degreesLatitude;
         userStates[sender].longitud = degreesLongitude;
         console.log("Ubicación recibida:", userStates[sender].latitud, userStates[sender].longitud);
@@ -163,9 +168,23 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
         return userRetryMessage(userStates, sender, `❌ Error al calcular cuota. Intente con otro plazo.`);
       }
       data.cuota_mensual = cuota;
-      userStates[sender].state = "verificacion";
       userStates[sender].retries = 0;
-      return `${showVerification(data)}`;
+      userStates[sender].state = "validacion_cuota";
+      return `${showValidationCuota(data)}`;
+    }
+    case "validacion_cuota" :{
+      const resp = classifyYesNo(userMessage);
+      if (resp === true){
+        userStates[sender].state = "verificacion";
+        return `${showVerification(data)}`;
+      }
+      else if (resp === false) {
+        userStates[sender].state = "monto";
+        userStates[sender].retries = 0;
+        return `Ingrese otro monto:`;
+      } else {
+        return `❓ Responda Sí✔️ o No❌.`;
+      }
     }
     case "verificacion": {
       const resp = classifyYesNo(userMessage);
