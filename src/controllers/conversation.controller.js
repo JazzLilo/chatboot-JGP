@@ -22,9 +22,6 @@ import { getDocumentState, documentsFlow } from '../utils/document.flow.js'
 import { userRetryMessage } from './user.messages.controller.js';
 
 export const continueVirtualApplication = async (state, data, sender, userMessage, userStates, prompts) => {
-  console.log('****************************************************************');
-  console.log(`Estado actual: ${state}, Mensaje del usuario: ${userMessage}`);
-  console.log('****************************************************************');
   if (userStates[sender].cancelAttempts >= MAX_CANCEL_ATTEMPTS) {
     console.log(`Usuario ${sender} ha alcanzado el límite de intentos de cancelación.`);
     userStateBaned(userStates, sender);
@@ -35,7 +32,6 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
   if (typeof userMessage != "object") {
     // Permite cancelar en cualquier momento
     if (userMessage.toLowerCase().includes("cancelar")) {
-      console.log('UserStates:', userStates);
       handleCancel(sender, userStates)
 
       console.log('Cancelación exitosa', userStates);

@@ -19,7 +19,6 @@ export async function processDocument(filePath, documentKey, userData) {
   const validationPrompt = getValidationPromptFromKey(documentKey);
   const policyResult = await validateDocument(base64Data, mimeType, validationPrompt);
 
-console.log('*************************************************************************************************************************')
   // 2. Validación de legibilidad y formato
   let extracted = {};
   switch (documentKey) {

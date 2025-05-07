@@ -14,13 +14,14 @@ import {
     messageRequestFile,
     messageRequestFileSuccess,
     messageRequestFileError,
-    messageProcessFileError
+    messageProcessFileError,
+    messageRequestFileCiError
 } from '../utils/message.js';
 import { userStateInit } from '../controllers/user.state.controller.js';
 import {
     getDocumentState,
     getNextDocumentKey
- } from '../utils/document.flow.js'
+} from '../utils/document.flow.js'
 import { userStateExededRetryLimit } from '../controllers/user.state.controller.js';
 
 /**
@@ -29,13 +30,9 @@ import { userStateExededRetryLimit } from '../controllers/user.state.controller.
 export const documentIngress = async (userStates, message, sock) => {
     const id = message.key.remoteJid;
     const userState = userStates[id] || userStateInit(id);
-    console.log('*-*-*-**-*-*-*-*-*-*-*-*')
-    console.log(message.message.conversation?.toLowerCase().includes("cancelar"))
-    console.log('*-*-*-**-*-*-*-*-*-*-*-*')
-    if ( message.message.conversation?.toLowerCase().includes("cancelar")) { console.log('******--------*********'); return}; 
+    if (message.message.conversation?.toLowerCase().includes("cancelar")) { return };
     if (!isMediaMessage(message)) {
         userStates[id].intents += 1
-        console.log(userStates[id].intents)
         return sendRequestFileMessage(sock, id);
     }
 
@@ -53,7 +50,6 @@ export const documentIngress = async (userStates, message, sock) => {
         await handleValidationResult(result, key, userState, userStates, sock, id);
     } catch (error) {
         userStates[sender].intents += 1
-        console.log(userStates[sender].intents)
         console.error(`Error en documentIngress [${id}]:`, error);
         await sock.sendMessage(id, { text: messageProcessFileError });
     }
@@ -63,7 +59,7 @@ export const documentIngress = async (userStates, message, sock) => {
  * Verifica si el mensaje contiene documento, imagen o video.
  */
 function isMediaMessage(message) {
-    
+
     const { documentMessage, imageMessage, videoMessage } = message.message || {};
     return Boolean(documentMessage || imageMessage || videoMessage);
 }
@@ -72,7 +68,7 @@ function isMediaMessage(message) {
  * Solicita al usuario que envíe un archivo.
  */
 async function sendRequestFileMessage(sock, id) {
-   
+
     await sock.sendMessage(id, { text: messageRequestFile });
 }
 
@@ -102,33 +98,48 @@ async function saveTemporaryFile(buffer, key, extension) {
  * Maneja el flujo tras la validación: éxito o error.
  */
 async function handleValidationResult(result, key, userState, userStates, sock, id) {
-    const responese = messageRequestFileSuccess(getDocumentDescription(key));
-    console.log(responese)
-    if (result === 'si') {
-        userStates[id].intents = 0
-        const nextKey = getNextDocumentKey(key);
-        if (nextKey) {
-            userState.current_document = nextKey;
-            userState.state = getDocumentState(nextKey);
-        } else {
-            userState.state = 'documentos_recibidos';
-            // Aquí continúa el proceso completo
-        }
+
+    const isCIReDocument = userState.current_document === 'foto_ci_re';
+    const nextKey = getNextDocumentKey(key);
+    const isValid = result === 'si';
+
+    if (!isValid) {
+        const errorMessage = messageRequestFileError(getDocumentDescription(key));
+        return await handleInvalidAttempt(userStates, sock, id, errorMessage);
+    }
+
+    if (isCIReDocument && !userStates[id].matches.ciMatch) {
+        
+        userStates[id].current_document = 'foto_ci_an';
+        userStates[id].state = getDocumentState('foto_ci_an');
+        return await handleInvalidAttempt(userStates, sock, id, messageRequestFileCiError);
+    }
+
+    userStates[id].intents = 0;
+
+    if (nextKey) {
+        userState.current_document = nextKey;
+        userState.state = getDocumentState(nextKey);
     } else {
-        userStates[id].intents += 1
-        if (userStates[id].intents >= 3) {
-            
-            userStateExededRetryLimit(userStates, id);
-            await sock.sendMessage(id, {
-                text: '❌ Has alcanzado el límite de intentos. Por favor, intenta nuevamente en unos minutos.'
-            });
-        }
-        console.log(userStates[id].intents)
-        await sock.sendMessage(id, {
-            text: messageRequestFileError(getDocumentDescription(key))
-        });
+        userState.state = 'documentos_recibidos';
     }
 }
+
+async function handleInvalidAttempt(userStates, sock, id, errorMessage) {
+    userStates[id].intents += 1;
+
+    if (userStates[id].intents >= 3) {
+        userStateExededRetryLimit(userStates, id);
+        return await sock.sendMessage(id, {
+            text: '❌ Has alcanzado el límite de intentos. Por favor, intenta nuevamente en unos minutos.'
+        });
+    }
+
+    return await sock.sendMessage(id, {
+        text: errorMessage
+    });
+}
+
 
 /**
  * Obtiene extensión de archivo según tipo de media.

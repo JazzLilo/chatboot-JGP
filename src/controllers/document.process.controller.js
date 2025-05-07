@@ -17,7 +17,6 @@ export async function processDocument(filePath, documentKey, userData, userState
 
   // 1. Validación de legibilidad y formato
   const validationPrompt = getValidationPromptFromKey(documentKey);
-  console.log("Validación de legibilidad y formato:", validationPrompt);
   const policyResult = await validateDocument(base64Data, mimeType, validationPrompt);
 
 
@@ -48,7 +47,6 @@ export async function processDocument(filePath, documentKey, userData, userState
   console.log("Datos extraídos:", extracted);
   // 3. Comparación con datos de usuario
   const matches = compareWithUserData(extracted, userData);
-  console.log("matches", matches);
   if (!userStates[sender].matches) {
     userStates[sender].matches = matches;
   } else {
@@ -58,7 +56,6 @@ export async function processDocument(filePath, documentKey, userData, userState
   }
     //return { policyResult, extracted, matches };
     const resultado = policyResult.trim(); // "si" o "no"
-    console.log("Resultado de la validación:", resultado);
     return resultado;
   }
 
