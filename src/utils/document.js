@@ -19,11 +19,60 @@ export async function processDocument(filePath, documentKey, userData) {
   const validationPrompt = getValidationPromptFromKey(documentKey);
   const policyResult = await validateDocument(base64Data, mimeType, validationPrompt);
 
-
+console.log('*************************************************************************************************************************')
   // 2. Validación de legibilidad y formato
-  //let copiar el codigo de validateFormat
+  let extracted = {};
+  switch (documentKey) {
+    case 'foto_ci_an':
+    case 'foto_ci_re': {
+      // Pedimos JSON con campos ci y name
+      const extractPrompt = `Extrae de esta imagen la cédula de identidad (CI) y el nombre completo en formato JSON { \"ci\": \"...\", \"name\": \"...\" }.`;
+      const jsonText = await validateDocument(base64Data, mimeType, extractPrompt);
+      try {
+        extracted = JSON.parse(jsonText);
+      } catch {
+        // Fallback: parseo manual
+        const ciMatch = /\"ci\"\s*:\s*\"(\d{5,10})\"/.exec(jsonText);
+        const nameMatch = /\"name\"\s*:\s*\"([^\"]+)\"/.exec(jsonText);
+        extracted = {
+          ci: ciMatch?.[1] || null,
+          name: nameMatch?.[1] || null
+        };
+      }
+      break;
+    }
+    case 'croquis': {
+      // 2a. Intentar EXIF
+      try {
+        const { tags } = ExifParser.create(fileBuffer).parse();
+        if (tags.GPSLatitude && tags.GPSLongitude) {
+          extracted = { latitude: tags.GPSLatitude, longitude: tags.GPSLongitude };
+          break;
+        }
+      } catch { }
+      // 2b. Si no EXIF, extraer dirección con Gemini y geocodificar
+      const dirPrompt = `Extrae la dirección completa que aparece en este croquis como texto, Busca en La Paz, Bolivia.`;
+      const address = await validateDocument(base64Data, mimeType, dirPrompt);
+      if (!address) {
+        extracted = { error: 'No se encontró dirección en el croquis.' };
+        break;
+      }
+      const coords = await geocodeAddress(address.trim());
+      extracted = coords || { error: 'No se pudo geolocalizar la dirección extraída.' };
+      break;
+    }
+    default: {
+      // Texto genérico
+      const textPrompt = `Extrae todo el texto legible de este documento.`;
+      const raw = await validateDocument(base64Data, mimeType, textPrompt);
+      extracted = { rawText: raw };
+    }
+  }
   // 3. Comparación con datos de usuario
-  //const matches = compareWithUserData(extracted, userData);
+  const matches = compareWithUserData(extracted, userData);
+
+  console.log("matches", matches);
+
   //return { policyResult, extracted, matches };
   const resultado = policyResult.trim(); // "si" o "no"
   return resultado;
@@ -153,7 +202,7 @@ export const dateFormatToday = () => {
 
 
 export const getValidationPromptFromKey = (documentKey) => {
-  
+
   const dateToday = new Date().toISOString().split('T')[0];
   switch (documentKey) {
     case "foto_ci_an":

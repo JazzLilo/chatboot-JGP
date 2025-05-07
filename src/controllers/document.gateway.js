@@ -47,7 +47,7 @@ export const documentIngress = async (userStates, message, sock) => {
         await dataFieldAssignment(userState.data, key, filePath);
         logConversation(id, `Archivo guardado: ${filePath}`, 'bot');
 
-        const result = await processDocument(filePath, key, userState.data);
+        const result = await processDocument(filePath, key, userState.data, userStates, id);
         logConversation(id, `Resultado procesamiento: ${JSON.stringify(result)}`, 'bot');
 
         await handleValidationResult(result, key, userState, userStates, sock, id);
