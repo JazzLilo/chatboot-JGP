@@ -165,7 +165,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       }
       data.cuota_mensual = cuota;
       userStates[sender].retries = 0;
-      userStates[sender].state = "suelto";
+      userStates[sender].state = "sueldo";
       return `¿Cuánto de sueldos percibes al mes?`;
     }
     case "sueldo" :{
@@ -203,9 +203,16 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
         userStates[sender].retries = 0;
         return `¿Cuántas deudas fincieras tiene?`;
       } else if (resp === false) {
-        userStates[sender].state = "calcular_capacidad_pago";
-        userStates[sender].retries = 0;
-        return `${showVerification(data)}`; ;
+        const capacidad = calculateCapacidad(data);
+        console.log("Capacidad calculada:", capacidad);
+        if (capacidad > data.cuota_mensual){
+          return `${showVerification(data)}`;
+        }
+        else {
+          userStates[sender].state = "INIT";
+          userStates[sender].retries = 0;
+          return `El monto solicitado fue rechazado, puede apersonarse a una de nuestras oficinas, puedo ayuarle en algo mas? \n${contentMenu} `;
+        }
       }
     }
     case "cantidad_deudas": {
@@ -219,6 +226,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       const val = parseFloat(userMessage.replace(/[^0-9.]/g, ""));
       data.monto_pago_deuda = val;
       const capacidad = calculateCapacidad(data);
+      console.log("Capacidad calculada:", capacidad);
       if (capacidad > data.cuota_mensual){
         return `${showVerification(data)}`;
       }
