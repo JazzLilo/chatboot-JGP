@@ -69,3 +69,7 @@ export const calculateMonthlyFee = (monto, meses) => {
     const resultado = (monto / 1000) * valor;
     return Math.round(resultado * 100) / 100;
 }
+
+export const calculateCapacidad = (data) => {
+    return (data.sueldo/2) + (data.ingreso_extra || 0) + (data.monto_pago_deuda || 0)
+}

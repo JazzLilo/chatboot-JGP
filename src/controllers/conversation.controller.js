@@ -1,5 +1,5 @@
 import { MAX_CANCEL_ATTEMPTS, MAX_RETRIES } from '../utils/constant.js'
-import { calculateMonthlyFee, classifyYesNo, getRandomVariation } from '../config/utils.js';
+import { calculateCapacidad, calculateMonthlyFee, classifyYesNo, getRandomVariation } from '../config/utils.js';
 import { userStateVerifyAsalariado, userStateBaned, resetUserState, userStateExededRetryLimit } from '../controllers/user.state.controller.js';
 import { validateEmail, isInApplicationProcess } from '../utils/validate.js';
 import { showVerification, showValidationCuota } from '../utils/generate.js';
@@ -165,23 +165,70 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       }
       data.cuota_mensual = cuota;
       userStates[sender].retries = 0;
-      userStates[sender].state = "validacion_cuota";
-      return `${showValidationCuota(data)}`;
+      userStates[sender].state = "suelto";
+      return `¿Cuánto de sueldos percibes al mes?`;
     }
-    case "validacion_cuota" :{
+    case "sueldo" :{
+      const val = parseFloat(userMessage.replace(/[^0-9.]/g, ""));
+      data.sueldo = val;
+      userStates[sender].state = "ingreso_extra";
+      userStates[sender].retries = 0;
+      return `¿Percibes un ingreso extra?`;
+    }
+    case "ingreso_extra":  {
       const resp = classifyYesNo(userMessage);
-      if (resp === true){
-        userStates[sender].state = "verificacion";
-        return `${showVerification(data)}`;
-      }
-      else if (resp === false) {
-        userStates[sender].state = "monto";
+      if (resp === true) {
+        userStates[sender].state = "ingreso_extra_monto";
         userStates[sender].retries = 0;
-        return `Ingrese otro monto:`;
+        return `¿Cuánto es lo que percibes al mes?`;
+      } else if (resp === false) {
+        userStates[sender].state = "deuda";
+        userStates[sender].retries = 0;
+        return `¿Tiene una deuda financiera?`;
       } else {
         return `❓ Responda Sí✔️ o No❌.`;
       }
     }
+    case "ingreso_extra_monto": {
+      const val = parseFloat(userMessage.replace(/[^0-9.]/g, ""));
+      data.ingreso_extra = val;
+      userStates[sender].state = "deuda";
+      userStates[sender].retries = 0;
+      return `¿Tiene una deuda financiera?`;
+    }
+    case "deuda": {
+      const resp = classifyYesNo(userMessage);
+      if (resp === true) {
+        userStates[sender].state = "cantidad_deudas";
+        userStates[sender].retries = 0;
+        return `¿Cuántas deudas fincieras tiene?`;
+      } else if (resp === false) {
+        userStates[sender].state = "calcular_capacidad_pago";
+        userStates[sender].retries = 0;
+        return `${showVerification(data)}`; ;
+      }
+    }
+    case "cantidad_deudas": {
+      const val = parseInt(userMessage);
+      data.cantidad_deudas = val;
+      userStates[sender].state = "monto_pago_deuda";
+      userStates[sender].retries = 0;
+      return `¿Cuánto es lo que cancela al mes?`;
+    }
+    case "monto_pago_deuda": {
+      const val = parseFloat(userMessage.replace(/[^0-9.]/g, ""));
+      data.monto_pago_deuda = val;
+      const capacidad = calculateCapacidad(data);
+      if (capacidad > data.cuota_mensual){
+        return `${showVerification(data)}`;
+      }
+      else {
+        userStates[sender].state = "INIT";
+        userStates[sender].retries = 0;
+        return `El monto solicitado fue rechazado, puede apersonarse a una de nuestras oficinas, puedo ayuarle en algo mas? \n${contentMenu} `;
+      }
+    }
+    
     case "verificacion": {
       const resp = classifyYesNo(userMessage);
       if (resp === true) {
