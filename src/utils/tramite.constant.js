@@ -1,16 +1,7 @@
-export const generateApplicationContent = (data, sender) => `
-=== DATOS DE LA SOLICITUD ===
-
-Fecha: ${new Date().toLocaleString()}
-Nombre: ${data.nombre_completo}
-Cédula: ${data.cedula}
-Dirección: ${data.direccion}
-Email: ${data.email}
-Monto solicitado: Bs. ${data.monto}
-Plazo: ${data.plazo_meses} meses
-Cuota mensual: Bs. ${data.cuota_mensual}
-Número de contacto: ${sender}
-`;
+export const MIN_PLAZO = 6;
+export const MAX_PLAZO = 12;
+export const MIN_MONTO = 1000;
+export const MAX_MONTO = 1000000;
 
 export const showVerification = (data) => {
   return `📋 *Verifique los datos:*
@@ -25,6 +16,7 @@ export const showVerification = (data) => {
 ¿Son correctos? (Sí/No)`;
 }
 
+
 export const showValidationCuota = (data) => {
   return `📋 *Verifique los datos:*
 - 1️⃣*Monto:* Bs. ${data.monto}
@@ -32,4 +24,21 @@ export const showValidationCuota = (data) => {
 - 3️⃣*Cuota:* Bs. ${data.cuota_mensual}
 
 En caso de estar de acuerdo, envié (si/no) para continuar ...`; 
+}
+
+
+export const showOptionsDeuda = (data, capacidad, maxLoan) => {
+  //const capacidad = calculateCapacidad(data);
+  //#const maxLoan = calculateMaxLoanAmount(capacidad, data.plazo_meses);
+  
+  return `⚠️ *Ajuste necesario*\n
+• Capacidad de pago: Bs${capacidad}
+• Cuota actual: Bs${data.cuota_mensual}
+• Máximo préstamo posible: Bs${maxLoan}
+
+1️⃣ Reducir monto (Bs${maxLoan})
+2️⃣ Extender plazo (hasta 24 meses)
+3️⃣ Asesoría presencial
+
+Seleccione una opción:`;
 }

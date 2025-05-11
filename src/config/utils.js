@@ -1,6 +1,5 @@
 import fs from 'fs';
 import { normalize } from '../utils/validate.js';
-import { tabla_asesor } from '../utils/constant.js';
 import { negativePatterns, positivePatterns } from '../utils/regex.js';
 
 /**
@@ -56,20 +55,3 @@ export const classifyYesNo = (msg) => {
     return null;
 }
 
-/**
- * Calcula la cuota mensual basada en el monto y el plazo.
- * 
- * @param {number} monto - El monto solicitado.
- * @param {number} meses - El plazo en meses.
- * @returns {number|null} - La cuota mensual calculada o null si el plazo no es válido.
- */
-export const calculateMonthlyFee = (monto, meses) => {
-    const valor = tabla_asesor[meses];
-    if (!valor) return null;
-    const resultado = (monto / 1000) * valor;
-    return Math.round(resultado * 100) / 100;
-}
-
-export const calculateCapacidad = (data) => {
-    return (data.sueldo/2) + (data.ingreso_extra || 0) + (data.monto_pago_deuda || 0)
-}
