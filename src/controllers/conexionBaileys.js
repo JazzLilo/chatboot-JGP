@@ -10,9 +10,10 @@ import { userStateInit } from '../controllers/user.state.controller.js'
 import { contentMenu, messageCancel } from '../utils/message.js'
 import { documentIngress } from '../controllers/document.gateway.js';
 import { resetUserState } from '../controllers/user.state.controller.js';
-import { generateResponse, handleVirtualApplication, continueVirtualApplication, handleUserMessage  } from '../controllers/conversation.controller.js';
+import { generateResponse, handleVirtualApplication, continueVirtualApplication, handleUserMessage } from '../controllers/conversation.controller.js';
 import { classifyIntent } from '../controllers/gemini.controller.js';
 import { getRandomVariation } from '../config/utils.js'
+import { tramiteIngress } from "./tramite.controller.js";
 
 export const connectToWhatsApp = async (userStates, prompts, handlers) => {
   const {
@@ -84,7 +85,9 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
       logConversation(id, mensaje, "usuario");
       console.log("Mensaje recibido:", mensaje);
       console.log("Estado del usuario:", userStates[id].state);
-     
+
+
+
       if (userStates[id].state === "INIT") {
         const num = parseInt(mensaje);
         if (!isNaN(num)) {
@@ -140,6 +143,7 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
       } else if (userStates[id].state !== "finished") {
         const enTramite = isInApplicationProcess(userStates, id);
         console.log("Estado del usuario:", userStates);
+
         const respuesta = enTramite
           ? await continueVirtualApplication(
             userStates[id].state,
@@ -149,10 +153,11 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
             userStates,
             prompts
           )
-          : await handleUserMessage(id, mensaje, prompts ,userStates);
+          : await handleUserMessage(id, mensaje, prompts, userStates);
         console.log("Respuesta del bot:", respuesta);
         await sock.sendMessage(id, { text: respuesta });
         logConversation(id, respuesta, "bot");
+
 
       } else if (userStates[id].state == "limit_retries") {
         const respuesta = `⏳ Has alcanzado el límite de intentos, intente en unos minutos.`;
