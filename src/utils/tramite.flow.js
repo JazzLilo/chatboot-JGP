@@ -1,12 +1,14 @@
-import {MIN_PLAZO, MAX_PLAZO, MIN_MONTO, MAX_MONTO} from '../utils/tramite.constant.js';
+import { MIN_PLAZO, MAX_PLAZO, MIN_MONTO, MAX_MONTO,  showVerification } from '../utils/tramite.constant.js';
+import { saveDataTramiteUser, validateRange, calculateMonthlyFee, processCapacityEvaluation} from '../utils/tramite.helppers.js';
+import { userRetryMessage } from '../controllers/user.messages.controller.js';
 
 export const TRAMITE_FLOW = [
   // Datos personales
   {
-    key: 'nombre',
+    key: 'nombre_completo',
     label: 'Nombre completo',
     emoji: '👤',
-    validation: (input) => input.trim().length >= 3,
+    validation: (input) => /^[a-zA-ZÁÉÍÓÚÑáéíóúñ0-9\s]{5,}$/g.test(input.trim()) && /\D/.test(input.trim()),
     errorMessage: '❌ Nombre muy corto. Ingrese su nombre completo'
   },
   {
@@ -20,15 +22,17 @@ export const TRAMITE_FLOW = [
     key: 'direccion',
     label: 'Dirección de domicilio',
     emoji: '🏠',
-    validation: (input) => input.trim().length >= 5,
+    validation: (input) => /^[a-zA-ZÁÉÍÓÚÑáéíóúñ0-9\s]{3,}$/g.test(input.trim()) && /\D/.test(input.trim()),
     errorMessage: '❌ Dirección muy corta. Ingrese una dirección válida'
   },
   {
     key: 'enlace_maps',
     label: 'Comparte tu ubicación (o escribe *omitir*)',
     emoji: '🗺️',
-    validation: (input) => input.toLowerCase() === 'omitir' || input.includes('maps.google') || input.includes('goo.gl/maps'),
-    errorMessage: '❌ Enlace inválido. Comparte un enlace de Google Maps o escribe *omitir*'
+    validation: (input) =>
+      typeof input === 'string' && input.toLowerCase().trim() === "omitir" ||
+      typeof input === 'object' && input.degreesLatitude,
+    errorMessage: '❌ Por favor, comparte tu ubicación o escribe *omitir*'
   },
   {
     key: 'email',
@@ -37,7 +41,7 @@ export const TRAMITE_FLOW = [
     validation: (input) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input),
     errorMessage: '❌ Email inválido. Ingrese un correo válido'
   },
-  
+
   // Datos del préstamo
   {
     key: 'monto',
@@ -47,26 +51,26 @@ export const TRAMITE_FLOW = [
       const amount = parseFloat(input.replace(/[^0-9.]/g, ''));
       return amount >= MIN_MONTO && amount <= max_monto;
     },
-    errorMessage: '❌ Monto inválido. Debe ser entre 1,000 y 100,000 Bs'
+    errorMessage: (min, max) => `❌ Monto inválido. Debe ser entre ${min} y ${max} Bs`
   },
   {
-    key: 'plazo_en_meses',
-    label: 'Plazo en meses (6-12)',
+    key: 'plazo_meses',
+    label: `Plazo en meses (entre ${MIN_PLAZO} y ${MAX_PLAZO} meses)`,
     emoji: '📅',
     validation: (input) => {
       const months = parseInt(input);
       return months >= MIN_PLAZO && months <= MAX_PLAZO;
     },
-    errorMessage: '❌ Plazo inválido. Debe ser entre 6 y 12 meses'
+    errorMessage: `❌ Plazo inválido. Debe ser entre ${MIN_PLAZO} y ${MAX_PLAZO} meses`
   },
-  
+
   // Situación financiera
   {
     key: 'sueldo',
     label: 'Sueldo mensual neto',
     emoji: '💵',
     validation: (input) => parseFloat(input.replace(/[^0-9.]/g, '')) > 0,
-    errorMessage: '❌ Ingrese un monto válido'
+    errorMessage: (min, max) => `❌ Monto inválido. Ingrese entre ${min} y ${max} Bs`
   },
   {
     key: 'ingreso_extra',
@@ -91,7 +95,7 @@ export const TRAMITE_FLOW = [
     errorMessage: '❌ Responda Sí o No'
   },
   {
-    key: 'cuota_deuda',
+    key: 'monto_pago_deuda',
     label: 'Total mensual que paga por deudas:',
     emoji: '💳',
     skipCondition: (data) => data.deuda?.toLowerCase() === 'no',
@@ -137,10 +141,16 @@ export const getValidationErrorMessage = (key) => {
   return step?.errorMessage || '❌ Entrada inválida';
 };
 
+// Helper para obtener el mensaje de error para montos
+export const getValidationErrorMessageMonto = (key, min, max) => {
+  const step = getTramiteStep(key);
+  return step?.errorMessage ? step.errorMessage(min, max) : '❌ Entrada inválida';
+};
+
 // Helper para obtener el siguiente paso considerando condiciones de salto
 export const getNextTramiteKey = (currentKey, data) => {
   const currentIndex = TRAMITE_FLOW.findIndex(step => step.key === currentKey);
-  
+
   if (currentIndex === -1 || currentIndex >= TRAMITE_FLOW.length - 1) {
     return null;
   }
@@ -148,7 +158,7 @@ export const getNextTramiteKey = (currentKey, data) => {
   // Buscar el siguiente paso que no cumpla condiciones de salto
   for (let i = currentIndex + 1; i < TRAMITE_FLOW.length; i++) {
     const nextStep = TRAMITE_FLOW[i];
-    
+
     if (!nextStep.skipCondition || !nextStep.skipCondition(data)) {
       return nextStep.key;
     }
@@ -156,3 +166,58 @@ export const getNextTramiteKey = (currentKey, data) => {
 
   return null;
 };
+
+export const handleTextInput = (userStates, sender, data, state, nextState, input, max_value = 0) => {
+  if (!validateTramiteInput(state, input, max_value)) {
+    return userRetryMessage(userStates, sender, getValidationErrorMessage(state));
+  }
+  saveDataTramiteUser(userStates, sender, data, state, input, nextState);
+  console.log('Estado del flujo:', nextState);
+  if (nextState == 'verificacion') {
+    return showVerification(data)
+  }
+  return getTramitePrompt(nextState);
+};
+
+export const handleNumberInput = (userStates, sender, data, state, nextState, input, min_value = 0, max_value = 0) => {
+  if (!validateRange(input, min_value, max_value)) {
+    return userRetryMessage(userStates, sender, getValidationErrorMessageMonto(state, min_value, max_value));
+  }
+  saveDataTramiteUser(userStates, sender, data, state, input, nextState);
+  return getTramitePrompt(nextState);
+};
+
+export const handlePlazoInput = (userStates, sender, data, state, nextState, input, min_value = 0, max_value = 0) => {
+
+  if (!validateRange(input, min_value, max_value)) {
+    return userRetryMessage(userStates, sender, getValidationErrorMessageMonto(state, min_value, max_value));
+  }
+  saveDataTramiteUser(userStates, sender, data, state, input, nextState);
+  const cuota_mensual = calculateMonthlyFee(data.monto, data.plazo_meses);
+  saveDataTramiteUser(userStates, sender, data, 'cuota_mensual', cuota_mensual, nextState);
+  if (userStates[sender].adjustmentFlow == 'monto' || userStates[sender].adjustmentFlow == 'plazo') {
+    return processCapacityEvaluation(data, userStates, sender);
+  } else {
+    userStates[sender].state = nextState;
+    return getTramitePrompt(nextState);
+  }
+}
+
+export const handleLocationInput = (userStates, sender, data, state, nextState, input) => {
+  console.log('Validando input de ubicación:', state, input, data);
+  if (typeof input != "object") {
+    if (input.toLowerCase() === "omitir") {
+      saveDataTramiteUser(userStates, sender, data, 'latitud', 0, nextState);
+      saveDataTramiteUser(userStates, sender, data, 'longitud', 0, nextState);
+      return getTramitePrompt(nextState);
+    }
+  }
+  if (input) {
+    const { degreesLatitude, degreesLongitude } = input;
+    console.log(`Latitud: ${degreesLatitude}, Longitud: ${degreesLongitude}`);
+    saveDataTramiteUser(userStates, sender, data, 'latitud', degreesLatitude, nextState);
+    saveDataTramiteUser(userStates, sender, data, 'longitud', degreesLongitude, nextState);
+    return getTramitePrompt(nextState);
+  }
+  return userRetryMessage(userStates, sender, getValidationErrorMessage(state));
+}

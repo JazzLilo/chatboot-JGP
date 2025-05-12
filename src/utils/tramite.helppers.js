@@ -3,17 +3,25 @@ import { tabla_asesor } from '../utils/constant.js';
 export const parseCurrency = (input) => parseFloat(input.replace(/[^0-9.]/g, ""));
 export const validateRange = (value, min, max) => !isNaN(value) && value >= min && value <= max;
 
+/**
+ * Evaluates the user's financial capacity and updates user state accordingly.
+ * 
+ * @param {object} data - Contains user financial data including 'cuota_mensual' and 'plazo_meses'.
+ * @param {object} userStates - Object maintaining the state for each user session.
+ * @param {string} sender - Identifier for the user session.
+ * @returns {string} - Returns a verification message if capacity is sufficient, otherwise returns options for debt adjustment.
+ */
+
 export const processCapacityEvaluation = (data, userStates, sender) => {
   const capacidad = calculateCapacidad(data);
   data.max_loan_amount = calculateMaxLoanAmount(capacidad, data.plazo_meses);
-
   if (capacidad > data.cuota_mensual) {
     userStates[sender].state = "verificacion";
-    return showVerification(data);
+    return showVerification(data,);
   }
 
   userStates[sender].state = "select_option_deuda";
-  return showOptionsDeuda(data);
+  return showOptionsDeuda(data, capacidad, data.max_loan_amount);
 }
 
 /**
@@ -31,7 +39,7 @@ export const calculateMonthlyFee = (monto, meses) => {
 }
 
 export const calculateCapacidad = (data) => {
-    return (data.sueldo/2) + (data.ingreso_extra || 0) + (data.monto_pago_deuda || 0)
+    return (data.sueldo/2) + (data.ingreso_extra_monto || 0) + (data.monto_pago_deuda|| 0)
 }
 
 export const calculateMaxLoanAmount = (capacidadPago, plazoMeses) => {
@@ -39,4 +47,10 @@ export const calculateMaxLoanAmount = (capacidadPago, plazoMeses) => {
     if (!valor) return null;
     const resultado = (capacidadPago * 1000) / valor;
     return Math.round(resultado * 100) / 100;
+}
+
+export const saveDataTramiteUser = (userStates, sender, data, state, value, nextState) => {
+      data[state] = value;
+      userStates[sender].state = nextState;
+      userStates[sender].retries = 0;
 }

@@ -7,10 +7,18 @@ export class ApplicationData {
         this.nombre_completo = null;
         this.cedula = null;
         this.direccion = null;
+        this.latitud = null;
+        this.longitud = null;
         this.email = null;
         this.monto = null;
         this.plazo_meses = null;
         this.cuota_mensual = null;
+        this.sueldo = null;
+        this.ingreso_extra_monto = null;
+        this.cantidad_deuda = null;
+        this.monto_pago_deuda = null;
+        this.max_loan_amount = null;
+        this.cuota_deuda = null;
         this.foto_ci_an = null;
         this.foto_ci_re = null;
         this.croquis = null;
@@ -19,6 +27,8 @@ export class ApplicationData {
         this.boleta_pago3 = null;
         this.factura = null;
         this.gestora_publica_afp = null;
+        this.max_loan_amount = null;
+        
     }
 }
 

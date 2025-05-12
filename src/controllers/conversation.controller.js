@@ -1,5 +1,5 @@
 import { MAX_CANCEL_ATTEMPTS, MAX_RETRIES } from '../utils/constant.js'
-import {  classifyYesNo, getRandomVariation } from '../config/utils.js';
+import { classifyYesNo, getRandomVariation } from '../config/utils.js';
 import { userStateVerifyAsalariado, userStateBaned, resetUserState, userStateExededRetryLimit } from '../controllers/user.state.controller.js';
 import { validateEmail, isInApplicationProcess } from '../utils/validate.js';
 
@@ -21,11 +21,12 @@ import { getDocumentState, documentsFlow } from '../utils/document.flow.js'
 
 import { userRetryMessage } from './user.messages.controller.js';
 
-import {MIN_MONTO, MIN_PLAZO, MAX_MONTO, MAX_PLAZO, showVerification, showValidationCuota,showOptionsDeuda } from '../utils/tramite.constant.js';
-import {parseCurrency, validateRange, processCapacityEvaluation, calculateMonthlyFee, calculateCapacidad, calculateMaxLoanAmount} from '../utils/tramite.helppers.js';
+import { MIN_MONTO, MIN_PLAZO, MAX_MONTO, MAX_PLAZO, showVerification, showValidationCuota, showOptionsDeuda,  CORRECTION_MAP } from '../utils/tramite.constant.js';
+import { parseCurrency, validateRange, processCapacityEvaluation, calculateMonthlyFee, calculateCapacidad, calculateMaxLoanAmount, saveDataTramiteUser } from '../utils/tramite.helppers.js';
 
 
-
+import { getTramiteStep, getTramitePrompt, validateTramiteInput, getValidationErrorMessage, getNextTramiteKey, handleTextInput, handleLocationInput, handleNumberInput, handlePlazoInput } from '../utils/tramite.flow.js'
+import { get } from 'http';
 
 export const continueVirtualApplication = async (state, data, sender, userMessage, userStates, prompts) => {
   if (userStates[sender].cancelAttempts >= MAX_CANCEL_ATTEMPTS) {
@@ -57,154 +58,64 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       const respuesta = classifyYesNo(userMessage);
       if (respuesta === true) {
         data.es_asalariado = true;
-        userStates[sender].state = "nombre";
+        userStates[sender].in_data_charge = true;
+        userStates[sender].state = "nombre_completo";
         userStates[sender].retries = 0;
-        return `Ingrese su nombre completo:`;
+        return getTramitePrompt("nombre_completo");
       } else if (respuesta === false) {
         const message = `❌ Lo sentimos, por ahora solo prestamos para asalariados. Aquí tienes más información:\n\n${getRandomVariation(prompts["requisitos"])}`;
         userStates[sender].state = "INIT";
         userStates[sender].retries = 0;
+        userStates[sender].in_application = false;
+
         return message ? `${message}\n\n` : `${contentMenu}`;
       } else {
         return userRetryMessage(userStates, sender, `❓ Responda Sí✔️ o No❌.`);
       }
     }
-    case "nombre": {
-      const nombre = userMessage.trim();
-      const esnombreValida = /^[a-zA-ZÁÉÍÓÚÑáéíóúñ0-9\s]{5,}$/g.test(nombre) &&
-        /\D/.test(nombre);
-      if (!esnombreValida) return userRetryMessage(userStates, sender, `❌ Nombre no válido. Intente de nuevo. `);
-      data.nombre_completo = userMessage.trim();
-      userStates[sender].state = "cedula";
-      userStates[sender].retries = 0;
-      return `Perfecto, ${data.nombre_completo}.\nAhora, ingrese su numero de ci (ej: 123456):`;
+
+    case "nombre_completo": {
+      return handleTextInput(userStates, sender, data, "nombre_completo", "cedula", userMessage.trim());
     }
     case "cedula": {
-      if (!/^\d+$/.test(userMessage) || userMessage.length < 5) {
-        return userRetryMessage(userStates, sender, `❌ Cédula no válida. Intente de nuevo:`);
-      }
-      data.cedula = userMessage;
-      userStates[sender].state = "direccion";
-      userStates[sender].retries = 0;
-      return `Ahora, ingrese su dirección:`;
+      return handleTextInput(userStates, sender, data, "cedula", "direccion", userMessage.trim());
     }
     case "direccion": {
-      const direccion = userMessage.trim();
-      const esDireccionValida = /^[a-zA-ZÁÉÍÓÚÑáéíóúñ0-9\s]{3,}$/g.test(direccion) &&
-        /\D/.test(direccion);
-      if (!esDireccionValida) {
-        return userRetryMessage(userStates, sender, `❌ Dirección no válida. Por favor, ingresa una zona o barrio.`);
-      }
-      data.direccion = direccion;
-      userStates[sender].direccion = direccion;
-      userStates[sender].state = "enlace_maps";
-      return "📍 Gracias. Si deseas, puedes compartir tu ubicación (o escribe *omitir* para continuar sin ella):";
+      return handleTextInput(userStates, sender, data, "direccion", "enlace_maps", userMessage.trim());
     }
     case "enlace_maps": {
-      const location = userMessage;
-      if (typeof userMessage != "object") {
-        if (userMessage.toLowerCase() === "omitir") {
-          data.latitud = 0;
-          data.longitud = 0;
-          userStates[sender].latitud = 0;
-          userStates[sender].longitud = 0;
-          userStates[sender].state = "email";
-          return "Ubicación omitida. Perfecto, ahora ingrese su email:";
-        }
-      }
-
-      if (location) {
-        const { degreesLatitude, degreesLongitude } = location;
-        data.latitud = degreesLatitude;
-        data.longitud = degreesLongitude;
-        userStates[sender].latitud = degreesLatitude;
-        userStates[sender].longitud = degreesLongitude;
-        console.log("Ubicación recibida:", userStates[sender].latitud, userStates[sender].longitud);
-        userStates[sender].state = "email";
-        return "📍 Ubicación recibida correctamente. Ahora ingrese su email:";
-      }
-
-      // Si no es ubicación ni 'omitir', se asume que es un enlace
-      const coords = await getLatLongFromLink(userMessage);
-      if (!coords) {
-        return "❌ Enlace no válido o no se pudo extraer coordenadas. Intente de nuevo:";
-      }
-
-      userStates[sender].latitud = coords.latitude;
-      userStates[sender].longitud = coords.longitude;
-      userStates[id].state = "email";
-      return "Perfecto, ahora ingrese su email:";
+      return handleLocationInput(userStates, sender, data, "enlace_maps", "email", userMessage);
     }
     case "email": {
-      if (!validateEmail(userMessage)) {
-        return userRetryMessage(userStates, sender, `❌ Email no válido. Intente de nuevo:`);
-      }
-      data.email = userMessage.trim();
-      userStates[sender].state = "monto";
-      userStates[sender].retries = 0;
-      return `Ahora, ingrese el monto solicitado (ej: 5000):`;
-    } 
+      return handleTextInput(userStates, sender, data, "email", "monto", userMessage.trim());
+    }
     case "monto": {
       const val = parseCurrency(userMessage);
       const MIN_MONTO = 1000;
       const MAX_MONTO = data.max_loan_amount || 100000;
 
-      if (!validateRange(val, MIN_MONTO, MAX_MONTO)) {
-        return userRetryMessage(
-          userStates,
-          sender,
-          `❌ Monto inválido. Ingrese entre ${MIN_MONTO.toLocaleString()} y ${MAX_MONTO.toLocaleString()} Bs`
-        );
-      }
-
-      data.monto = val;
-      userStates[sender].state = "plazo";
-      userStates[sender].retries = 0;
-
-      // Mantenemos el flag adjustmentFlow si existe
-      return `Ingrese el nuevo plazo en meses (6-24):`;
+      return handleNumberInput(userStates, sender, data, "monto", "plazo_meses", val, MIN_MONTO, MAX_MONTO);
     }
-    case "plazo": {
+    case "plazo_meses": {
       const meses = parseInt(userMessage);
       const MIN_PLAZO = 6;
       const MAX_PLAZO = data.allow_extended_term ? 24 : 12;
 
-      if (!validateRange(meses, MIN_PLAZO, MAX_PLAZO)) {
-        return userRetryMessage(
-          userStates,
-          sender,
-          `❌ Plazo inválido. Ingrese entre ${MIN_PLAZO} y ${MAX_PLAZO} meses`
-        );
-      }
-
-      data.plazo_meses = meses;
-      data.cuota_mensual = calculateMonthlyFee(data.monto, meses) || 0;
-      console.log("----------------->",userStates[sender].adjustmentFlow)
-      // Redirección inteligente según contexto
-      if (userStates[sender].adjustmentFlow == 'monto' ) { 
-        userStates[sender].state = "monto_pago_deuda";
-        delete data.adjustmentFlow;
-      } else {
-        userStates[sender].state = "sueldo";
-      }
-
-      return data.adjustmentFlow
-        ? `Plazo actualizado. Recalculando...`
-        : `¿Cuál es su sueldo mensual neto?`;
+      return handlePlazoInput(userStates, sender, data, "plazo_meses", "sueldo", meses, MIN_PLAZO, MAX_PLAZO);
     }
     case "sueldo": {
       data.sueldo = parseCurrency(userMessage);
       userStates[sender].state = "ingreso_extra";
-      return `¿Recibe ingresos adicionales? (Sí/No)`;
+      return getTramitePrompt("ingreso_extra");
     }
     case "ingreso_extra": {
       switch (classifyYesNo(userMessage)) {
         case true:
           userStates[sender].state = "ingreso_extra_monto";
-          return `Indique el monto de ingresos adicionales mensuales:`;
+          return getTramitePrompt("ingreso_extra_monto");
         case false:
           userStates[sender].state = "deuda";
-          return `¿Tiene deudas financieras? (Sí/No)`;
+          return getTramitePrompt("deuda");
         default:
           return `❌ Responda Sí o No`;
       }
@@ -213,22 +124,15 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       const val = parseCurrency(userMessage);
       const MIN_MONTO = 0;
       const MAX_MONTO = 100000;
-      if (!validateRange(val, MIN_MONTO, MAX_MONTO)) {
-        return userRetryMessage(
-          userStates,
-          sender,
-          `❌ Monto inválido. Ingrese entre ${MIN_MONTO.toLocaleString()} y ${MAX_MONTO.toLocaleString()} Bs`
-        )
-      }
-      data.ingreso_extra = val;
-      userStates[sender].state = "deuda";
-      return `¿Tiene deudas financieras? (Sí/No)`;
+
+      return handleNumberInput(userStates, sender, data, "ingreso_extra_monto", "deuda", val, MIN_MONTO, MAX_MONTO);
+
     }
     case "deuda": {
       switch (classifyYesNo(userMessage)) {
         case true:
           userStates[sender].state = "monto_pago_deuda";
-          return `Ingrese el total mensual que paga por sus deudas:`;
+          return getTramitePrompt("monto_pago_deuda");
         case false:
           return processCapacityEvaluation(data, userStates, sender);
         default:
@@ -249,7 +153,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
 
         case 2:
           userStates[sender].adjustmentFlow = 'plazo'; // Bandera para flujo de ajuste
-          userStates[sender].state = "plazo";
+          userStates[sender].state = "plazo_meses";
           return `Ingrese nuevo plazo (6-24 meses):`;
 
         case 3:
@@ -278,101 +182,40 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       } else if (resp === false) {
         userStates[sender].state = "correccion";
         userStates[sender].retries = 0;
-        return `🔄 ¿Qué dato deseas corregir?\n1️⃣ Nombre\n2️⃣ Cédula\n3️⃣ Dirección\n4️⃣ Email\n5️⃣ Monto\n6️⃣ Plazo\n(Escribe el número de la opción o 'cancelar' para terminar.)`;
+        return `🔄 ¿Qué dato deseas corregir?\n1️⃣ Nombre\n2️⃣ Cédula\n3️⃣ Dirección\n4️⃣ Email\n5️⃣Ubicacion Compartida  \n(Escribe el número de la opción o 'cancelar' para terminar.)`;
       } else {
         return `❓ Responda Sí✔️ o No❌.`;
       }
     }
+    // Manejo de estados para correcciones
     case "correccion": {
       const opcion = parseInt(userMessage);
-      if (![1, 2, 3, 4, 5, 6, 7].includes(opcion)) {
-        return userRetryMessage(userStates, sender, `❌ Opción no válida, intente de nuevo:`);
+      if (![1, 2, 3, 4, 5].includes(opcion)) {
+        return userRetryMessage(userStates, sender, `❌ Opción no válida. Ingrese un número del 1 al 7:`);
       }
-
-      userStates[sender].state = map[opcion];
-      return `Ingrese el nuevo valor (o 'cancelar' para terminar):`;
+      userStates[sender].state = CORRECTION_MAP[opcion];
+      return `✏️ Ingrese el nuevo valor para ${getTramitePrompt(CORRECTION_MAP[opcion].split('-')[1])}:`;
     }
 
+    // Handlers reutilizables para correcciones
+    case "correccion-nombre_completo":{
+      return handleTextInput(userStates, sender, data, "nombre_completo", "verificacion", userMessage.trim());
+    }
 
-    // Manejo de estados para correcciones
-    case "correccion_nombre":
-    case "correccion_cedula":
-    case "correccion_direccion":
-    case "correccion_enlace_maps":
-    case "correccion_email":
-    case "correccion_monto":
-    case "correccion_plazo": {
-      const field = state.split("_")[1];
-      console.log(`Estado de Corrección: ${state}, Campo a corregir: ${field}`);
+    case "correccion-cedula":{
+      return handleTextInput(userStates, sender, data, "cedula", "verificacion", userMessage.trim());
+    }
 
-      switch (field) {
-        case "nombre":
-          if (!userMessage.trim())
-            return userRetryMessage(userStates, sender, `❌ Nombre inválido, intente de nuevo:`);
-          data.nombre_completo = userMessage.trim();
-          break;
-        case "cedula":
-          if (!/^\d+$/.test(userMessage) || userMessage.length < 5)
-            return userRetryMessage(userStates, sender, `❌ Cédula no válida:`);
-          data.cedula = userMessage;
-          break;
-        case "direccion":
-          if (!userMessage.trim()) return userRetryMessage(userStates, sender, `❌ Dirección no válida:`);
-          data.direccion = userMessage.trim();
-          break;
-        case "enlace_maps":
-          const location = userMessage;
-          if (typeof userMessage != "object") {
-            if (userMessage.toLowerCase() === "omitir") {
-              userStates[sender].latitud = 0;
-              userStates[sender].longitud = 0;
-              break
-            }
-          }
-          if (location) {
-            const { degreesLatitude, degreesLongitude } = location;
-            userStates[sender].latitud = degreesLatitude;
-            userStates[sender].longitud = degreesLongitude;
-            console.log("Ubicación recibida:", userStates[sender].latitud, userStates[sender].longitud);
-            break
-          }
+    case "correccion-direccion":{
+      return handleTextInput(userStates, sender, data, "direccion", "verificacion", userMessage.trim());
+    }
 
-          // Si no es ubicación ni 'omitir', se asume que es un enlace
-          const coords = await getLatLongFromLink(userMessage);
-          if (!coords) {
-            return "❌ Enlace no válido o no se pudo extraer coordenadas. Intente de nuevo:";
-          }
+    case "correccion-email":{
+      return handleTextInput(userStates, sender, data, "email", "verificacion", userMessage.trim());
+    }
 
-          userStates[sender].latitud = coords.latitude;
-          userStates[sender].longitud = coords.longitude;
-          break;
-        case "email":
-          if (!validateEmail()) return userRetryMessage(userStates, sender, `❌ Email no válido:`);
-          data.email = userMessage.trim();
-          break;
-        case "monto":
-          const val = parseFloat(userMessage.replace(/[^0-9.]/g, ""));
-          if (isNaN(val) || val < 1000 || val > 100000)
-            return userRetryMessage(userStates, sender, `❌ Monto no válido. Por favor, ingrese un monto entre 1,000 y 100,000. Ejemplo: 5000 o 15,000.`);
-          data.monto = val;
-          data.cuota_mensual = calculateMonthlyFee(
-            data.monto,
-            data.plazo_mensual
-          );
-          break;
-        case "plazo":
-          const meses = parseInt(userMessage);
-          if (isNaN(meses) || meses < 1 || meses > 24)
-            return userRetryMessage(userStates, sender, `❌ Plazo no válido. Intente de nuevo:`);
-          data.plazo_mensual = meses;
-          data.cuota_mensual = calculateMonthlyFee(data.monto, meses);
-          break;
-        default:
-          return userRetryMessage(userStates, sender, `❌ Campo desconocido. Intente de nuevo:`);
-      }
-
-      userStates[sender].state = "verificacion";
-      return `${showVerification(data)}`;
+    case "correccion-enlace_maps":{
+      return handleLocationInput(userStates, sender, data, "enlace_maps", "verificacion", userMessage);
     }
 
     // Estado final después de recibir todos los documentos

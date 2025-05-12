@@ -3,6 +3,14 @@ export const MAX_PLAZO = 12;
 export const MIN_MONTO = 1000;
 export const MAX_MONTO = 1000000;
 
+export const CORRECTION_MAP = {
+  1: 'correccion-nombre_completo',
+  2: 'correccion-cedula',
+  3: 'correccion-direccion',
+  4: 'correccion-email',
+  5: 'correccion-enlace_maps'
+};
+
 export const showVerification = (data) => {
   return `📋 *Verifique los datos:*
 - 1️⃣ *Nombre:* ${data.nombre_completo}
