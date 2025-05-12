@@ -1,5 +1,5 @@
-import { MIN_PLAZO, MAX_PLAZO, MIN_MONTO, MAX_MONTO,  showVerification } from '../utils/tramite.constant.js';
-import { saveDataTramiteUser, validateRange, calculateMonthlyFee, processCapacityEvaluation} from '../utils/tramite.helppers.js';
+import { MIN_PLAZO, MAX_PLAZO, MIN_MONTO, MAX_MONTO, showVerification } from '../utils/tramite.constant.js';
+import { saveDataTramiteUser, validateRange, calculateMonthlyFee, processCapacityEvaluation } from '../utils/tramite.helppers.js';
 import { userRetryMessage } from '../controllers/user.messages.controller.js';
 
 export const TRAMITE_FLOW = [
@@ -20,10 +20,15 @@ export const TRAMITE_FLOW = [
   },
   {
     key: 'direccion',
-    label: 'Dirección de domicilio',
+    label: 'Dirección de domicilio (ej: Av. Principal #123, Urbanización)',
     emoji: '🏠',
-    validation: (input) => /^[a-zA-ZÁÉÍÓÚÑáéíóúñ0-9\s]{3,}$/g.test(input.trim()) && /\D/.test(input.trim()),
-    errorMessage: '❌ Dirección muy corta. Ingrese una dirección válida'
+    validation: (input) => {
+      const trimmed = input.trim();
+      return (
+        trimmed.length >= 3 && /^[a-zA-ZÁÉÍÓÚÑáéíóúñ0-9\s\/\-.,#]+$/g.test(trimmed) && /\D/.test(trimmed)
+      );
+    },
+    errorMessage: '❌ Formato inválido. Ejemplo: "Calle Libertad #25, Residencias Valle"'
   },
   {
     key: 'enlace_maps',

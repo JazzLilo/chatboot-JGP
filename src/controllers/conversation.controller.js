@@ -158,7 +158,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
 
         case 3:
           userStates[sender].state = "INIT";
-          return `Visite nuestras oficinas para más opciones. ¿Necesita algo más?\n${contentMenu}`;
+          return `Visite nuestras oficinas para más opciones.\n ${prompts.sucursales_horarios.content}\n${contentMenu}`;
 
         default:
           const capacidad = calculateCapacidad(data);
