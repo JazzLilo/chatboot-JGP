@@ -1,32 +1,21 @@
-import { MAX_CANCEL_ATTEMPTS, MAX_RETRIES } from '../utils/constant.js'
+import { MAX_CANCEL_ATTEMPTS } from '../utils/constant.js'
 import { classifyYesNo, getRandomVariation } from '../config/utils.js';
-import { userStateVerifyAsalariado, userStateBaned, resetUserState, userStateExededRetryLimit } from '../controllers/user.state.controller.js';
-import { validateEmail, isInApplicationProcess } from '../utils/validate.js';
-
+import { userStateVerifyAsalariado, userStateBaned, resetUserState} from '../controllers/user.state.controller.js';
+import { isInApplicationProcess } from '../utils/validate.js';
 import directoryManager from '../config/directory.js';
 import { saveApplicationData } from '../controllers/user.data.controller.js';
 import { logConversation } from '../utils/logger.js'
 import { classifyIntent } from '../controllers/gemini.controller.js';
 import fs from "fs";
 import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained, messageMaxRetry } from '../utils/message.js';
-import {
-  getDocumentPrompt,
-} from '../utils/conversation.prompts.js';
-
-import { getLatLongFromLink } from '../controllers/gemini.controller.js'
-
-
-import { map } from '../utils/prompt.js';
+import {  getDocumentPrompt,} from '../utils/conversation.prompts.js';
 import { getDocumentState, documentsFlow } from '../utils/document.flow.js'
-
 import { userRetryMessage } from './user.messages.controller.js';
+import {showOptionsDeuda,  CORRECTION_MAP } from '../utils/tramite.constant.js';
+import { parseCurrency, processCapacityEvaluation, calculateCapacidad, calculateMaxLoanAmount } from '../utils/tramite.helppers.js';
 
-import { MIN_MONTO, MIN_PLAZO, MAX_MONTO, MAX_PLAZO, showVerification, showValidationCuota, showOptionsDeuda,  CORRECTION_MAP } from '../utils/tramite.constant.js';
-import { parseCurrency, validateRange, processCapacityEvaluation, calculateMonthlyFee, calculateCapacidad, calculateMaxLoanAmount, saveDataTramiteUser } from '../utils/tramite.helppers.js';
+import {  getTramitePrompt,handleTextInput, handleLocationInput, handleNumberInput, handlePlazoInput } from '../utils/tramite.flow.js'
 
-
-import { getTramiteStep, getTramitePrompt, validateTramiteInput, getValidationErrorMessage, getNextTramiteKey, handleTextInput, handleLocationInput, handleNumberInput, handlePlazoInput } from '../utils/tramite.flow.js'
-import { get } from 'http';
 
 export const continueVirtualApplication = async (state, data, sender, userMessage, userStates, prompts) => {
   if (userStates[sender].cancelAttempts >= MAX_CANCEL_ATTEMPTS) {
@@ -99,7 +88,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     case "plazo_meses": {
       const meses = parseInt(userMessage);
       const MIN_PLAZO = 6;
-      const MAX_PLAZO = data.allow_extended_term ? 24 : 12;
+      const MAX_PLAZO = data.allow_extended_term ? 12 : 12;
 
       return handlePlazoInput(userStates, sender, data, "plazo_meses", "sueldo", meses, MIN_PLAZO, MAX_PLAZO);
     }
@@ -147,14 +136,14 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       const option = parseInt(userMessage);
       switch (option) {
         case 1:
-          userStates[sender].adjustmentFlow = 'monto'; // Bandera para flujo de ajuste
+          userStates[sender].adjustmentFlow = 'monto'; 
           userStates[sender].state = "monto";
           return `Ingrese nuevo monto (máximo ${data.max_loan_amount.toFixed(2)} Bs):`;
 
         case 2:
-          userStates[sender].adjustmentFlow = 'plazo'; // Bandera para flujo de ajuste
+          userStates[sender].adjustmentFlow = 'plazo';
           userStates[sender].state = "plazo_meses";
-          return `Ingrese nuevo plazo (6-24 meses):`;
+          return `Ingrese nuevo plazo (6-12 meses):`;
 
         case 3:
           userStates[sender].state = "INIT";
@@ -170,7 +159,6 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     case "verificacion": {
       const resp = classifyYesNo(userMessage);
       if (resp === true) {
-        // Crear directorio temporal si no existe
         const userTempDir = directoryManager.getPath("temp") + "/" + sender;
         fs.mkdirSync(userTempDir, { recursive: true });
 
@@ -187,7 +175,6 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
         return `❓ Responda Sí✔️ o No❌.`;
       }
     }
-    // Manejo de estados para correcciones
     case "correccion": {
       const opcion = parseInt(userMessage);
       if (![1, 2, 3, 4, 5].includes(opcion)) {
@@ -197,7 +184,6 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       return `✏️ Ingrese el nuevo valor para ${getTramitePrompt(CORRECTION_MAP[opcion].split('-')[1])}:`;
     }
 
-    // Handlers reutilizables para correcciones
     case "correccion-nombre_completo":{
       return handleTextInput(userStates, sender, data, "nombre_completo", "verificacion", userMessage.trim());
     }
@@ -240,12 +226,6 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
           const closureMessage = `✅ Todos los documentos han sido recibidos y guardados correctamente. El chatbot se cerrará ahora y se reiniciará en 5 minutos. Por favor, vuelve a contactarnos después de este tiempo.`;
           logConversation(sender, closureMessage, "bot");
 
-          // Enviar mensaje al usuario
-          // Aquí, necesitarás una instancia de `sock`. Como la función está dentro del flujo del trámite, es mejor pasar `sock` como parámetro o manejarlo de otra manera.
-          // Para simplificar, asumiremos que tienes acceso a `sock` aquí.
-          // Puedes modificar la función para pasar `sock` si es necesario.
-          // Por ahora, enviaremos el mensaje desde el flujo principal.
-
           // Programar el reinicio del estado después de 5 minutos
           setTimeout(() => {
             resetUserState(userStates, sender);
@@ -256,7 +236,6 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
 
           return closureMessage;
         } else {
-          // Manejo de error en el guardado
           return `❌ Hubo un error al guardar tu solicitud. Por favor, intenta nuevamente o contacta con soporte técnico.`;
         }
       } catch (error) {
