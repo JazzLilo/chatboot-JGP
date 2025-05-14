@@ -13,7 +13,6 @@ import { resetUserState } from '../controllers/user.state.controller.js';
 import { generateResponse, handleVirtualApplication, continueVirtualApplication, handleUserMessage } from '../controllers/conversation.controller.js';
 import { classifyIntent } from '../controllers/gemini.controller.js';
 import { getRandomVariation } from '../config/utils.js'
-import { tramiteIngress } from "./tramite.controller.js";
 
 export const connectToWhatsApp = async (userStates, prompts, handlers) => {
   const {

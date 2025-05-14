@@ -12,7 +12,8 @@ export const CORRECTION_MAP = {
 };
 
 export const showVerification = (data) => {
-  return `📋 *Verifique los datos:*
+  return `Usted cuenta con la capacidad de pago, antes de pasar al siguiente paso:
+📋 *Verifique los datos:*
 - 1️⃣ *Nombre:* ${data.nombre_completo}
 - 2️⃣ *Cédula:* ${data.cedula}
 - 3️⃣ *Dirección:* ${data.direccion}
@@ -20,7 +21,7 @@ export const showVerification = (data) => {
 - 5️⃣ *Monto:* Bs. ${data.monto}
 - 6️⃣ *Plazo:* ${data.plazo_meses} meses
 - 🔲 *Cuota:* Bs. ${data.cuota_mensual}
-
+Usted cancelara una cuota mensual de ${data.cuota_mensual} durante ${data.plazo_meses} meses. 
 ¿Son correctos? (Sí/No)`;
 }
 
