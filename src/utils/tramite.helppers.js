@@ -57,7 +57,7 @@ export const calculateCapacidad = (data) => {
 }
 
 export const calculateCapacidadFamiliar = (data) => {
-  return (data.sueldo / 2)  + (data.monto_pago_deuda || 0) + (data.sueldo_familiar / 2)
+  return (data.sueldo / 2)  + (data.monto_pago_deuda || 0) + (data.ingreso_familiar / 2)
 }
 
 export const calculateMaxLoanAmount = (capacidadPago, plazoMeses) => {

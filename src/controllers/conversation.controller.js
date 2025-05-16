@@ -164,7 +164,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       }
     }
     case "sueldo_familiar": {
-      data.sueldo_familiar = parseCurrency(userMessage);
+      data.ingreso_familiar = parseCurrency(userMessage);
       return processCapacityEvaluationFamiliar(data, userStates, sender);
     }
     case "select_option_deuda": {

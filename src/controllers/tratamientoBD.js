@@ -15,11 +15,10 @@ export class ApplicationData {
         this.plazo_meses = null;
         this.cuota_mensual = null;
         this.sueldo = null;
-        this.ingreso_extra_monto = null;
+        this.ingreso_familiar = null;
         this.cantidad_deuda = null;
         this.monto_pago_deuda = null;
         this.max_loan_amount = null;
-        this.cuota_deuda = null;
         this.foto_ci_an = null;
         this.foto_ci_re = null;
         this.croquis = null;
