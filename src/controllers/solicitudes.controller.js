@@ -18,6 +18,7 @@ export const getSolicitudes = async (req, res) => {
                 s.email AS "email",
                 s.monto AS "monto",
                 s.plazo_meses AS "plazo_meses",
+                s.rubro AS "rubro",
                 s.cuota_mensual AS "cuota_mensual"
             FROM solicitud s
         `;

@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS solicitud (
     email VARCHAR(100) NOT NULL,
     monto DECIMAL(10,2) NOT NULL,
     plazo_meses INT NOT NULL,
+    rubro VARCHAR(50) NOT NULL,
     cuota_mensual DECIMAL(10,2) NOT NULL,
     fecha_solicitud TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     estado VARCHAR(20) DEFAULT 'pendiente',

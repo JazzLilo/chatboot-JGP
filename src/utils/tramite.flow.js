@@ -3,6 +3,13 @@ import { saveDataTramiteUser, validateRange, calculateMonthlyFee, processCapacit
 import { userRetryMessage } from '../controllers/user.messages.controller.js';
 
 export const TRAMITE_FLOW = [
+  {
+    key: 'documento_custodia',
+    label: '¿Cuentas con un documento de custodia? (Inmueble o de vehiculo) *Ten en cuenta que este tiene que estar a tu nombre* (Sí/No)',
+    emoji: '📄',
+    validation: (input) => ['sí', 'si', 'no', 's', 'n'].includes(input.toLowerCase()),
+    errorMessage: '❌ Responda Sí o No'
+  },
   // Datos personales
   {
     key: 'nombre_completo',
@@ -50,13 +57,13 @@ export const TRAMITE_FLOW = [
   // Datos del préstamo
   {
     key: 'monto',
-    label: 'Monto a solicitar (entre 1,000 y 100,000 Bs)',
+    label: 'Monto a solicitar  (ej:5000) ',
     emoji: '💵',
     validation: (input, max_monto) => {
       const amount = parseFloat(input.replace(/[^0-9.]/g, ''));
       return amount >= MIN_MONTO && amount <= max_monto;
     },
-    errorMessage: (min, max) => `❌ Monto inválido. Debe ser entre ${min} y ${max} Bs`
+    errorMessage: (min, max) => `❌ Monto inválido. Debe ser menor a ${max} Bs`
   },
   {
     key: 'plazo_meses',
@@ -68,14 +75,31 @@ export const TRAMITE_FLOW = [
     },
     errorMessage: `❌ Plazo inválido. Debe ser entre ${MIN_PLAZO} y ${MAX_PLAZO} meses`
   },
-
   // Situación financiera
   {
+    key: 'rubro',
+    label: ` ¿A qué rubro te dedicas?
+
+  1️⃣ Financiera
+  2️⃣ Comercial
+  3️⃣ Industria
+  4️⃣ Salud
+  5️⃣ Educación
+
+  *Escribe el número del rubro*`,
+    emoji: '💼',
+    validation: (input) => {
+      const validRubro = ['1', '2', '3', '4', '5'];
+      return validRubro.includes(input);
+    },
+    errorMessage: '❌ Seleccione un rubro'
+  },
+  {
     key: 'sueldo',
-    label: 'Sueldo mensual neto',
+    label: '¿Cuánto de sueldos percibes al mes?',
     emoji: '💵',
     validation: (input) => parseFloat(input.replace(/[^0-9.]/g, '')) > 0,
-    errorMessage: (min, max) => `❌ Monto inválido. Ingrese entre ${min} y ${max} Bs`
+    errorMessage: (min, max) => `❌ Monto inválido.`
   },
   {
     key: 'ingreso_extra',
@@ -100,11 +124,32 @@ export const TRAMITE_FLOW = [
     errorMessage: '❌ Responda Sí o No'
   },
   {
+    key: 'cantidad_deuda',
+    label: '¿Cuántas deudas fincieras tiene?',
+    emoji: '💳',
+    validation: (input) => parseFloat(input.replace(/[^0-9.]/g, '')) >= 0,
+    errorMessage: '❌ Ingrese un número válido'
+  },
+  {
     key: 'monto_pago_deuda',
-    label: 'Total mensual que paga por deudas:',
+    label: '¿Cuánto es lo que cancela al mes?',
     emoji: '💳',
     skipCondition: (data) => data.deuda?.toLowerCase() === 'no',
     validation: (input) => parseFloat(input.replace(/[^0-9.]/g, '')) >= 0,
+    errorMessage: '❌ Ingrese un monto válido'
+  },
+  {
+    key: 'familiar_asalariado',
+    label: '¿Tiene algun ingreso familiar que sea asalariado? (Sí/No)',
+    emoji: '👨‍👩‍👧‍👦',
+    validation: (input) => ['sí', 'si', 'no', 's', 'n'].includes(input.toLowerCase()),
+    errorMessage: '❌ Ingrese Sí o No'
+  },
+  {
+    key: 'sueldo_familiar',
+    label: '¿Cuanto es lo que percibe al mensual?',
+    emoji: '👨‍👩‍👧‍👦',
+    validation: (input) => parseFloat(input.replace(/[^0-9.]/g, '')) > 0,
     errorMessage: '❌ Ingrese un monto válido'
   },
   {

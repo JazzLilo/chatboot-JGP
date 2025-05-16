@@ -11,10 +11,12 @@ import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, me
 import {  getDocumentPrompt,} from '../utils/conversation.prompts.js';
 import { getDocumentState, documentsFlow } from '../utils/document.flow.js'
 import { userRetryMessage } from './user.messages.controller.js';
-import {showOptionsDeuda,  CORRECTION_MAP } from '../utils/tramite.constant.js';
-import { parseCurrency, processCapacityEvaluation, calculateCapacidad, calculateMaxLoanAmount } from '../utils/tramite.helppers.js';
+import {showOptionsDeuda,  CORRECTION_MAP, showVerification  } from '../utils/tramite.constant.js';
+import { parseCurrency, processCapacityEvaluation, processCapacityEvaluationFamiliar,calculateCapacidad, calculateMaxLoanAmount } from '../utils/tramite.helppers.js';
 
 import {  getTramitePrompt,handleTextInput, handleLocationInput, handleNumberInput, handlePlazoInput } from '../utils/tramite.flow.js'
+import { get } from 'http';
+
 
 
 export const continueVirtualApplication = async (state, data, sender, userMessage, userStates, prompts) => {
@@ -48,9 +50,9 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       if (respuesta === true) {
         data.es_asalariado = true;
         userStates[sender].in_data_charge = true;
-        userStates[sender].state = "nombre_completo";
+        userStates[sender].state = "documento_custodia";
         userStates[sender].retries = 0;
-        return getTramitePrompt("nombre_completo");
+        return getTramitePrompt("documento_custodia");
       } else if (respuesta === false) {
         const message = `❌ Lo sentimos, por ahora solo prestamos para asalariados. Aquí tienes más información:\n\n${getRandomVariation(prompts["requisitos"])}`;
         userStates[sender].state = "INIT";
@@ -62,7 +64,18 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
         return userRetryMessage(userStates, sender, `❓ Responda Sí✔️ o No❌.`);
       }
     }
-
+    case "documento_custodia": {
+      switch (classifyYesNo(userMessage)) {
+        case true:
+          userStates[sender].state = "nombre_completo";
+          return getTramitePrompt("nombre_completo");
+        case false:
+          resetUserState(userStates, sender);
+          return `❌ Lo sentimos, Usted debe contar con un documento en custodia para inicira e tramite. Puede pasarse por nuestras Sucursales.\n\n ${contentMenu}`;
+        default:
+          return `❌ Responda Sí o No`;
+      }
+    }
     case "nombre_completo": {
       return handleTextInput(userStates, sender, data, "nombre_completo", "cedula", userMessage.trim());
     }
@@ -80,8 +93,8 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     }
     case "monto": {
       const val = parseCurrency(userMessage);
-      const MIN_MONTO = 1000;
-      const MAX_MONTO = data.max_loan_amount || 100000;
+      const MIN_MONTO = 0;
+      const MAX_MONTO = data.max_loan_amount || 5000;
 
       return handleNumberInput(userStates, sender, data, "monto", "plazo_meses", val, MIN_MONTO, MAX_MONTO);
     }
@@ -90,12 +103,15 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       const MIN_PLAZO = 6;
       const MAX_PLAZO = data.allow_extended_term ? 12 : 12;
 
-      return handlePlazoInput(userStates, sender, data, "plazo_meses", "sueldo", meses, MIN_PLAZO, MAX_PLAZO);
+      return handlePlazoInput(userStates, sender, data, "plazo_meses", "rubro", meses, MIN_PLAZO, MAX_PLAZO);
+    }
+    case "rubro": {
+      return handleTextInput(userStates, sender, data, "rubro", "sueldo", userMessage.trim());
     }
     case "sueldo": {
       data.sueldo = parseCurrency(userMessage);
-      userStates[sender].state = "ingreso_extra";
-      return getTramitePrompt("ingreso_extra");
+      userStates[sender].state = "deuda";
+      return getTramitePrompt("deuda");
     }
     case "ingreso_extra": {
       switch (classifyYesNo(userMessage)) {
@@ -120,17 +136,36 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     case "deuda": {
       switch (classifyYesNo(userMessage)) {
         case true:
-          userStates[sender].state = "monto_pago_deuda";
-          return getTramitePrompt("monto_pago_deuda");
+          userStates[sender].state = "cantidad_deuda";
+          return getTramitePrompt("cantidad_deuda");
         case false:
           return processCapacityEvaluation(data, userStates, sender);
         default:
           return `❌ Responda Sí o No`;
       }
     }
+    case "cantidad_deuda": {
+      return handleNumberInput(userStates, sender, data, "cantidad_deuda", "monto_pago_deuda", userMessage, 0, 100000);
+    }
     case "monto_pago_deuda": {
       data.monto_pago_deuda = parseCurrency(userMessage);
       return processCapacityEvaluation(data, userStates, sender);
+    }
+    case "familiar_asalariado": {
+      switch (classifyYesNo(userMessage)) {
+        case true:
+          userStates[sender].state = "sueldo_familiar";
+          return getTramitePrompt("sueldo_familiar");
+        case false:
+          userStates[sender].state = "select_option_deuda";
+          return showOptionsDeuda(data);
+        default:
+          return `❌ Responda Sí o No`;
+      }
+    }
+    case "sueldo_familiar": {
+      data.sueldo_familiar = parseCurrency(userMessage);
+      return processCapacityEvaluationFamiliar(data, userStates, sender);
     }
     case "select_option_deuda": {
       const option = parseInt(userMessage);

@@ -11,6 +11,7 @@ export class ApplicationData {
         this.longitud = null;
         this.email = null;
         this.monto = null;
+        this.rubro = null;
         this.plazo_meses = null;
         this.cuota_mensual = null;
         this.sueldo = null;
@@ -26,8 +27,8 @@ export class ApplicationData {
         this.boleta_pago2 = null;
         this.boleta_pago3 = null;
         this.factura = null;
+        this.documento_custodia = null;
         this.gestora_publica_afp = null;
-        this.max_loan_amount = null;
         
     }
 }
