@@ -25,9 +25,11 @@ export class ApplicationData {
         this.boleta_pago1 = null;
         this.boleta_pago2 = null;
         this.boleta_pago3 = null;
-        this.factura = null;
-        this.documento_custodia = null;
+        this.factura = null;        
         this.gestora_publica_afp = null;
+        this.custodia = null;
+        this.boleta_impuesto = null;
+        this.tipo_documento_custodia = null;
         
     }
 }
@@ -49,7 +51,9 @@ export const insertSolicitud = async (data) => {
             rubro: data.rubro,
             deudas: data.cantidad_deuda,
             pago_deudas: data.monto_pago_deuda,
-            ingreso_familiar: data.ingreso_familiar
+            sueldo: data.sueldo,
+            ingreso_familiar: data.ingreso_familiar,
+            tipo_documento_custodia: data.tipo_documento_custodia
         });
 
         await conn.query("BEGIN");
@@ -69,8 +73,10 @@ export const insertSolicitud = async (data) => {
                 ingreso_familiar,
                 estado,
                 latitud,
-                longitud
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                longitud,
+                tipo_documento_custodia,
+                sueldo
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             RETURNING id;
         `;
         
@@ -87,13 +93,15 @@ export const insertSolicitud = async (data) => {
             data.monto,
             data.plazo_meses,
             data.cuota_mensual,
-            data.rubro, // Campo obligatorio
+            data.rubro,
             cantidadDeudas,
             montoDeudas,
             ingresoFamiliar,
-            'pendiente', // Estado por defecto
+            'pendiente',
             data.latitud,
             data.longitud,
+            data.tipo_documento_custodia,
+            data.sueldo
         ];
 
         // Validaciones
@@ -146,7 +154,9 @@ export const insertFileLocation = async (solicitudId, filePath, fileType) => {
             "Boleta Pago 2": "boleta_pago2",
             "Boleta Pago 3": "boleta_pago3",
             "Factura": "factura",
-            "Gestora Pública AFP": "gestora_publica_afp"
+            "Gestora Pública AFP": "gestora_publica_afp",
+            "Documento de Custodia": "custodia",
+            "Boleta de Impuesto": "boleta_impuesto"
         };
 
         const columnName = columnMap[fileType];

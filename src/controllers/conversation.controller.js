@@ -8,8 +8,8 @@ import { logConversation } from '../utils/logger.js'
 import { classifyIntent } from '../controllers/gemini.controller.js';
 import fs from "fs";
 import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained, messageMaxRetry } from '../utils/message.js';
-import {  getDocumentPrompt,} from '../utils/conversation.prompts.js';
-import { getDocumentState, documentsFlow } from '../utils/document.flow.js'
+//import {  getDocumentPrompt,} from '../utils/conversation.prompts.js';
+import { getDocumentState, documentsFlow, getDocumentPrompt} from '../utils/document.flow.js'
 import { userRetryMessage } from './user.messages.controller.js';
 import {showOptionsDeuda,  CORRECTION_MAP, showVerification  } from '../utils/tramite.constant.js';
 import { parseCurrency, processCapacityEvaluation, processCapacityEvaluationFamiliar,calculateCapacidad, calculateMaxLoanAmount } from '../utils/tramite.helppers.js';

@@ -85,13 +85,11 @@ export const TRAMITE_FLOW = [
   3️⃣ Industria
   4️⃣ Salud
   5️⃣ Educación
+  6️⃣ Otros
 
-  *Escribe el número del rubro*`,
+  *Escribe el nombre del rubro*`,
     emoji: '💼',
-    validation: (input) => {
-      const validRubro = ['1', '2', '3', '4', '5'];
-      return validRubro.includes(input);
-    },
+    validation: (input) =>   /^[a-zA-ZÁÉÍÓÚÑáéíóúñ0-9\s]{5,}$/g.test(input.trim()) && /\D/.test(input.trim()),
     errorMessage: '❌ Seleccione un rubro'
   },
   {

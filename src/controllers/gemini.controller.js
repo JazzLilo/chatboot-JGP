@@ -92,3 +92,21 @@ export const validateDocument = async (base64Data, mimeType, prompt) => {
     return "❌ Error al procesar el documento";
   }
 };
+
+export const validateName = async (prompt) => {
+  try {
+    const { text } = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: [{
+        parts: [
+          { text: prompt }
+        ]
+      }]
+    });
+
+    return text;
+  } catch (error) {
+    console.error("Error validando el nombre:", error);
+    return "❌ Error al procesar el nombre";
+  }
+};

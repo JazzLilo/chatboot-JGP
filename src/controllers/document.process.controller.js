@@ -1,7 +1,7 @@
 import fs from "fs";
 import ExifParser from "exif-parser";
 import fetch from 'node-fetch';
-import { validateDocument } from './gemini.controller.js';
+import { validateDocument, validateName } from './gemini.controller.js';
 
 /**
  * Procesa un documento o imagen: valida formato, extrae datos y compara con userData.
@@ -42,6 +42,37 @@ export async function processDocument(filePath, documentKey, userData, userState
       }
       break;
     }
+    case 'custodia':{
+      const extractPrompt = `Verifica el tipo de documento que es, si es un RUAT o un FOLIO REAL, ambos son documentos Bolivianos. Si son alguno de estos documentos, obten el nombre del propietario en formato JSON { \"document_type\": \"...\", \"name\": \"...\" }.`;
+      const jsonText = await validateDocument(base64Data, mimeType, extractPrompt);
+      console.log("jsonText", jsonText);
+      try {
+        extracted = JSON.parse(jsonText);
+        /*
+        {
+ "document_type": "FOLIO REAL",
+ "name": "VIDAL VELASCO URQUIDI MARIA"
+}
+        */ 
+        console.log("extracted", extracted);
+        userStates[sender].data.tipo_documento_custodia =  extracted.document_type;
+        console.log("userStates[sender].data.tipo_documento_custodia", userStates[sender].data.tipo_documento_custodia);
+        userStates[sender].matches = compareWithUserData(extracted, userData);
+      } catch {
+        // Fallback: parseo manual
+        const document_type = /\"document_type\"\s*:\s*\"([^\"]+)\"/.exec(jsonText);
+        const nameMatch = /\"name\"\s*:\s*\"([^\"]+)\"/.exec(jsonText);
+        extracted = {
+          document_type: document_type?.[1] || null,
+          name: nameMatch?.[1] || null
+        };
+        console.log("extracted", extracted);
+        userStates[sender].data.tipo_documento_custodia =  extracted.document_type;
+        console.log("userStates[sender].data.tipo_documento_custodia", userStates[sender].data.tipo_documento_custodia);
+        userStates[sender].matches = compareWithUserData(extracted, userData);
+      }
+      break;
+    }
 
   }
   console.log("Datos extraídos:", extracted);
@@ -59,60 +90,6 @@ export async function processDocument(filePath, documentKey, userData, userState
     return resultado;
   }
 
-  /**
-   * Validación de legibilidad y formato si llegua a ser necesario
-   */
-
-  async function validateFormat(base64Data, mimeType, validationPrompt) {
-    // 2. Extracción de texto o datos con Gemini
-    let extracted = {};
-    switch (documentKey) {
-      case 'foto_ci_an':
-      case 'foto_ci_re': {
-        // Pedimos JSON con campos ci y name
-        const extractPrompt = `Extrae de esta imagen la cédula de identidad (CI) y el nombre completo en formato JSON { \"ci\": \"...\", \"name\": \"...\" }.`;
-        const jsonText = await validateDocument(base64Data, mimeType, extractPrompt);
-        try {
-          extracted = JSON.parse(jsonText);
-        } catch {
-          // Fallback: parseo manual
-          const ciMatch = /\"ci\"\s*:\s*\"(\d{5,10})\"/.exec(jsonText);
-          const nameMatch = /\"name\"\s*:\s*\"([^\"]+)\"/.exec(jsonText);
-          extracted = {
-            ci: ciMatch?.[1] || null,
-            name: nameMatch?.[1] || null
-          };
-        }
-        break;
-      }
-      case 'croquis': {
-        // 2a. Intentar EXIF
-        try {
-          const { tags } = ExifParser.create(fileBuffer).parse();
-          if (tags.GPSLatitude && tags.GPSLongitude) {
-            extracted = { latitude: tags.GPSLatitude, longitude: tags.GPSLongitude };
-            break;
-          }
-        } catch { }
-        // 2b. Si no EXIF, extraer dirección con Gemini y geocodificar
-        const dirPrompt = `Extrae la dirección completa que aparece en este croquis como texto, Busca en La Paz, Bolivia.`;
-        const address = await validateDocument(base64Data, mimeType, dirPrompt);
-        if (!address) {
-          extracted = { error: 'No se encontró dirección en el croquis.' };
-          break;
-        }
-        const coords = await geocodeAddress(address.trim());
-        extracted = coords || { error: 'No se pudo geolocalizar la dirección extraída.' };
-        break;
-      }
-      default: {
-        // Texto genérico
-        const textPrompt = `Extrae todo el texto legible de este documento.`;
-        const raw = await validateDocument(base64Data, mimeType, textPrompt);
-        extracted = { rawText: raw };
-      }
-    }
-  }
   /**
    * Geocoding con Google Maps API
    */
@@ -137,10 +114,11 @@ export async function processDocument(filePath, documentKey, userData, userState
       results.ciMatch = userData.cedula === extracted.ci;
     }
     if (userData.nombre_completo && extracted.name) {
-      results.nameMatch = extracted.name.toLowerCase().normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/\s+/g, ' ') ===
-        userData.nombre_completo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
+      results.nameMatch = validateName(`
+        ${userData.nombre_completo} es igual a ${extracted.name}
+        responde con true o false
+        `)
+
     }
     if (extracted.latitude && extracted.longitude && userData.latitude && userData.longitude) {
       results.locationMatch =
@@ -149,6 +127,7 @@ export async function processDocument(filePath, documentKey, userData, userState
     }
     return results;
   }
+
 
   export const getMimeTypeFromKey = (documentKey) => {
     switch (documentKey) {
@@ -162,6 +141,10 @@ export async function processDocument(filePath, documentKey, userData, userState
         return "image/jpeg";
       case "gestora_publica_afp":
         return "application/pdf";
+      case "custodia":
+        return "image/jpeg";
+      case "boleta_impuesto":
+        return "image/jpeg";
       default:
         return "application/octet-stream";
     }
@@ -231,6 +214,15 @@ Responde únicamente con:
 "si" o "no"`;
       case "ubicacion":
         return `No es obligadorio. si el usuario mando saltar, no es necesario que lo analices. Retorna si`
+      
+      case "documento_custodia":
+        return `Analiza si este archivo es un documento de custodia, verifica si es un RUAT o un FOLIO REAL, ambos son documentos Bolivianos.
+Responde únicamente con:
+"si" o "no"`;
+      case "boleta_impuesto":
+        return `Analiza si esta imagen corresponde a una boleta de impuesto, con datos legibles y reciente.
+Responde únicamente con:
+"si" o "no"`;
 
       default:
         return `Analiza si el documento enviado es legible y corresponde al tipo solicitado.
