@@ -120,8 +120,23 @@ export const insertSolicitud = async (data) => {
         const result = await conn.query(sql, values);
         const solicitudId = result.rows[0].id;
 
-        // Resto del código para archivos...
-        // ... (mantener igual la inserción en ubicacion_archivo)
+         const sqlUbicacion = `
+            INSERT INTO ubicacion_archivo (
+                solicitud_id,
+                foto_ci_an,
+                foto_ci_re,
+                croquis,
+                boleta_pago1,
+                boleta_pago2,
+                boleta_pago3,
+                factura,
+                gestora_publica_afp,
+                documento_custodia,
+                boleta_impuesto
+            ) VALUES ($1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+        `;
+        await conn.query(sqlUbicacion, [solicitudId]);
+
 
         await conn.query("COMMIT");
         console.log(`✅ Solicitud insertada con ID: ${solicitudId}`);
@@ -155,7 +170,7 @@ export const insertFileLocation = async (solicitudId, filePath, fileType) => {
             "Boleta Pago 3": "boleta_pago3",
             "Factura": "factura",
             "Gestora Pública AFP": "gestora_publica_afp",
-            "Documento de Custodia": "custodia",
+            "Custodia": "documento_custodia",
             "Boleta de Impuesto": "boleta_impuesto"
         };
 

@@ -27,10 +27,10 @@ import { userStateExededRetryLimit } from '../controllers/user.state.controller.
 
 export const documentIngress = async (userStates, message, sock) => {
     const id = message.key.remoteJid;
-    
+
     try {
         if (!id) throw new Error('ID de conversación no válido');
-        
+
         const userState = userStates[id] || userStateInit(id);
         if (message.message.conversation?.toLowerCase().includes("cancelar")) return;
 
@@ -54,7 +54,7 @@ export const documentIngress = async (userStates, message, sock) => {
     } catch (error) {
         console.error(`Error crítico en documentIngress [${id}]:`, error);
         const sender = message.key.remoteJid;
-        
+
         if (userStates[sender]) {
             userStates[sender].intents += 1;
             if (userStates[sender].intents >= 3) {
@@ -62,7 +62,7 @@ export const documentIngress = async (userStates, message, sock) => {
                 return;
             }
         }
-        
+
         try {
             await sock.sendMessage(id, { text: messageProcessFileError });
         } catch (sendError) {
@@ -135,26 +135,38 @@ async function handleValidationResult(result, key, userState, userStates, sock, 
         }
 
         if (isCustodiaDocument) {
-            if (!userStates[id].matches.nameMatch){
+            console.log("userStates[id].data.tipo_documento_custodia", userStates[id].matches);
+            if (!userStates[id].matches.nameMatch) {
                 userStates[id].current_document = 'custodia';
                 userStates[id].state = getDocumentState('custodia');
                 return await handleInvalidAttempt(userStates, sock, id, messageRequestFileCustodiaError);
             }
             if (userStates[id].data.tipo_documento_custodia === 'RUAT') {
-                 userState.state = 'documentos_recibidos';
-                 nextKey = null;
+                userState.state = 'documentos_recibidos';
+                await sock.sendMessage(id, {
+                    text: '✅ Todos los documentos han sido recibidos y validados correctamente.'
+                });
             }
-         }
-
-
-        userStates[id].intents = 0;
-
-        if (nextKey) {
-            userState.current_document = nextKey;
-            userState.state = getDocumentState(nextKey);
+            else{
+                 userState.current_document = nextKey;
+                userState.state = getDocumentState(nextKey);
+            }
         } else {
-            userState.state = 'documentos_recibidos';
+            userStates[id].intents = 0;
+
+            if (nextKey) {
+                userState.current_document = nextKey;
+                userState.state = getDocumentState(nextKey);
+            } else {
+                userState.state = 'documentos_recibidos';
+                await sock.sendMessage(id, {
+                    text: '✅ Documentación completa. Proceso finalizado.'
+                });
+            }
+
         }
+
+
     } catch (error) {
         console.error(`Error manejando resultado de validación [${id}]:`, error);
         throw new Error('Falló el procesamiento de validación');

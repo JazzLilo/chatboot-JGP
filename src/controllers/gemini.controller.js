@@ -85,7 +85,7 @@ export const validateDocument = async (base64Data, mimeType, prompt) => {
         ]
       }]
     });
-
+    console.log("Respuesta de Gemini:", text);
     return text;
   } catch (error) {
     console.error("Error validando documento:", error);
@@ -98,15 +98,14 @@ export const validateName = async (prompt) => {
     const { text } = await ai.models.generateContent({
       model: "gemini-1.5-flash",
       contents: [{
-        parts: [
-          { text: prompt }
-        ]
+        parts: [{ text: prompt + "\nResponde solo con 'true' o 'false' sin comillas." }]
       }]
     });
 
-    return text;
+    // Limpiar y normalizar la respuesta
+    return text.trim().toLowerCase().startsWith('true') ? "true" : "false";
   } catch (error) {
     console.error("Error validando el nombre:", error);
-    return "❌ Error al procesar el nombre";
+    return "false"; // Devuelve false por defecto en caso de error
   }
 };
