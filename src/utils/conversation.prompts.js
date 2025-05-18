@@ -8,6 +8,8 @@ export const getNextDocument = (currentDocument) => {
     "boleta_pago3",
     "factura",
     "gestora_publica_afp",
+    "custodia",
+    "boleta_impuesto",
   ];
 
   const currentIndex = order.indexOf(currentDocument);
@@ -26,7 +28,10 @@ export const getNextState = (currentState) => {
     "solicitar_documento_boleta_pago2",
     "solicitar_documento_boleta_pago3",
     "solicitar_documento_factura",
-    "solicitar_documento_gestora_publica_afp"]
+    "solicitar_documento_gestora_publica_afp",
+    "solicitar_documento_custodia",
+    "solicitar_documento_boleta_impuesto",
+  ]
 }
 
 export const dataFieldAssignment = (data, documentKey, filePath) => {
@@ -54,6 +59,12 @@ export const dataFieldAssignment = (data, documentKey, filePath) => {
       break;
     case "gestora_publica_afp":
       data.gestora_publica_afp = filePath;
+      break;
+    case "custodia":
+      data.custodia = filePath;
+      break;
+    case "boleta_impuesto":
+      data.boleta_impuesto = filePath;
       break;
     default:
       console.warn(`Documento desconocido: ${documentKey}`);
@@ -93,7 +104,9 @@ export const documentNames = {
   boleta_pago2: 'Boleta de pago 2',
   boleta_pago3: 'Boleta de pago 3',
   factura: 'Factura de servicios',
-  gestora_publica_afp: 'Documento AFP'
+  gestora_publica_afp: 'Documento AFP',
+  custodia: 'Documento de custodia',
+  boleta_impuesto: 'Boleta de impuesto',
 };
 
 export const getDocumentDescription = (key) => {

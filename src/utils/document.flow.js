@@ -8,8 +8,10 @@ export const documentsFlow = [
     { key: 'boleta_pago1',       label: 'Boleta de pago 1',                emoji: '💰' },
     { key: 'boleta_pago2',       label: 'Boleta de pago 2',                emoji: '💰' },
     { key: 'boleta_pago3',       label: 'Boleta de pago 3',                emoji: '💰' },
-    { key: 'factura',            label: 'Factura de servicios',            emoji: '📄' },
-    { key: 'gestora_publica_afp',label: 'Documento AFP',                  emoji: '📑' },
+    { key: 'factura',            label: 'Factura de servicios *Luz, Agua o Gas*',            emoji: '📄' },
+    { key: 'gestora_publica_afp',label: '*Gestora Pública AFP* en formato PDF',                  emoji: '📑' },
+    { key: 'custodia', label: 'Documento de custodia',            emoji: '📜' },
+    { key: 'boleta_impuesto',    label: 'Boleta de impuesto',              emoji: '🧾' },
   ];
   
   /**

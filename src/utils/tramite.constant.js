@@ -1,7 +1,7 @@
 export const MIN_PLAZO = 6;
 export const MAX_PLAZO = 12;
-export const MIN_MONTO = 1000;
-export const MAX_MONTO = 1000000;
+export const MIN_MONTO = 0;
+export const MAX_MONTO = 5000;
 
 export const CORRECTION_MAP = {
   1: 'correccion-nombre_completo',
@@ -36,17 +36,17 @@ En caso de estar de acuerdo, envié (si/no) para continuar ...`;
 }
 
 
-export const showOptionsDeuda = (data, capacidad, maxLoan) => {
+export const showOptionsDeuda = (data) => {
   //const capacidad = calculateCapacidad(data);
   //#const maxLoan = calculateMaxLoanAmount(capacidad, data.plazo_meses);
   
   return `⚠️ *Ajuste necesario*\n
-• Capacidad de pago: Bs${capacidad}
+• Capacidad de pago: Bs${data.capacidad}
 • Cuota actual: Bs${data.cuota_mensual}
-• Máximo préstamo posible: Bs${maxLoan}
+• Máximo préstamo posible: Bs${data.max_loan_amount}
 
-1️⃣ Reducir monto (Bs${maxLoan})
-2️⃣ Extender plazo (hasta 24 meses)
+1️⃣ Reducir monto (Bs${data.max_loan_amount})
+2️⃣ Extender plazo (hasta ${MAX_PLAZO} meses)
 3️⃣ Asesoría presencial
 
 Seleccione una opción:`;

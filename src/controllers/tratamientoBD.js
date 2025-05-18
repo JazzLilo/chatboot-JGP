@@ -11,23 +11,25 @@ export class ApplicationData {
         this.longitud = null;
         this.email = null;
         this.monto = null;
+        this.rubro = null;
         this.plazo_meses = null;
         this.cuota_mensual = null;
         this.sueldo = null;
-        this.ingreso_extra_monto = null;
+        this.ingreso_familiar = null;
         this.cantidad_deuda = null;
         this.monto_pago_deuda = null;
         this.max_loan_amount = null;
-        this.cuota_deuda = null;
         this.foto_ci_an = null;
         this.foto_ci_re = null;
         this.croquis = null;
         this.boleta_pago1 = null;
         this.boleta_pago2 = null;
         this.boleta_pago3 = null;
-        this.factura = null;
+        this.factura = null;        
         this.gestora_publica_afp = null;
-        this.max_loan_amount = null;
+        this.custodia = null;
+        this.boleta_impuesto = null;
+        this.tipo_documento_custodia = null;
         
     }
 }
@@ -45,7 +47,13 @@ export const insertSolicitud = async (data) => {
             plazo: data.plazo_meses,
             cuota: data.cuota_mensual,
             latitud: data.latitud,
-            longitud: data.longitud
+            longitud: data.longitud,
+            rubro: data.rubro,
+            deudas: data.cantidad_deuda,
+            pago_deudas: data.monto_pago_deuda,
+            sueldo: data.sueldo,
+            ingreso_familiar: data.ingreso_familiar,
+            tipo_documento_custodia: data.tipo_documento_custodia
         });
 
         await conn.query("BEGIN");
@@ -59,12 +67,24 @@ export const insertSolicitud = async (data) => {
                 monto, 
                 plazo_meses, 
                 cuota_mensual,
+                rubro,
+                cantidad_deudas,
+                monto_mensual_deudas,
+                ingreso_familiar,
                 estado,
                 latitud,
-                longitud
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                longitud,
+                tipo_documento_custodia,
+                sueldo
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
             RETURNING id;
         `;
+        
+        // Procesar valores opcionales
+        const cantidadDeudas = data.cantidad_deuda ? parseInt(data.cantidad_deuda) : 0;
+        const montoDeudas = data.monto_pago_deuda || 0;
+        const ingresoFamiliar = data.ingreso_familiar || 0;
+
         const values = [
             data.nombre_completo,
             data.cedula,
@@ -73,29 +93,34 @@ export const insertSolicitud = async (data) => {
             data.monto,
             data.plazo_meses,
             data.cuota_mensual,
-            'pendiente', // Agregamos el estado por defecto
+            data.rubro,
+            cantidadDeudas,
+            montoDeudas,
+            ingresoFamiliar,
+            'pendiente',
             data.latitud,
             data.longitud,
+            data.tipo_documento_custodia,
+            data.sueldo
         ];
 
-        // Validar que los datos cumplen con las restricciones
+        // Validaciones
         if (!data.nombre_completo || !data.cedula || !data.direccion || !data.email) {
             throw new Error("Datos personales incompletos");
         }
 
-        if (!data.monto || !data.plazo_meses || !data.cuota_mensual) {
+        if (!data.monto || !data.plazo_meses || !data.cuota_mensual || !data.rubro) {
             throw new Error("Datos financieros incompletos");
         }
 
         if (data.monto <= 0 || data.plazo_meses < 1 || data.plazo_meses > 17) {
-            throw new Error(`Datos financieros inválidos: monto=${data.monto}, plazo=${data.plazo_meses}`);
+            throw new Error(`Datos inválidos: monto=${data.monto}, plazo=${data.plazo_meses}`);
         }
 
         const result = await conn.query(sql, values);
         const solicitudId = result.rows[0].id;
 
-        // Insertar en ubicacion_archivo con los campos correctos
-        const sqlUbicacion = `
+         const sqlUbicacion = `
             INSERT INTO ubicacion_archivo (
                 solicitud_id,
                 foto_ci_an,
@@ -105,22 +130,25 @@ export const insertSolicitud = async (data) => {
                 boleta_pago2,
                 boleta_pago3,
                 factura,
-                gestora_publica_afp
-            ) VALUES ($1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+                gestora_publica_afp,
+                documento_custodia,
+                boleta_impuesto
+            ) VALUES ($1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
         `;
         await conn.query(sqlUbicacion, [solicitudId]);
+
 
         await conn.query("COMMIT");
         console.log(`✅ Solicitud insertada con ID: ${solicitudId}`);
         return solicitudId;
     } catch (err) {
         await conn.query("ROLLBACK");
-        console.error("❌ Error detallado al insertar solicitud:", {
+        console.error("❌ Error detallado:", {
             message: err.message,
             data: {
                 monto: data.monto,
                 plazo: data.plazo_meses,
-                cuota: data.cuota_mensual
+                rubro: data.rubro
             }
         });
         return false;
@@ -141,7 +169,9 @@ export const insertFileLocation = async (solicitudId, filePath, fileType) => {
             "Boleta Pago 2": "boleta_pago2",
             "Boleta Pago 3": "boleta_pago3",
             "Factura": "factura",
-            "Gestora Pública AFP": "gestora_publica_afp"
+            "Gestora Pública AFP": "gestora_publica_afp",
+            "Custodia": "documento_custodia",
+            "Boleta de Impuesto": "boleta_impuesto"
         };
 
         const columnName = columnMap[fileType];

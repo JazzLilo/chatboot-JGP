@@ -162,7 +162,6 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
         const respuesta = `⏳ Has alcanzado el límite de intentos, intente en unos minutos.`;
         await sock.sendMessage(id, { text: respuesta });
         logConversation(id, respuesta, "bot");
-
       } else {
         const mensajeEspera = `⏳ El chatbot se está reiniciando y no puede procesar nuevos mensajes ahora. Por favor, espera unos minutos antes de intentar nuevamente.`;
         await sock.sendMessage(id, { text: mensajeEspera });

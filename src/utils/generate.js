@@ -10,6 +10,15 @@ Monto solicitado: Bs. ${data.monto}
 Plazo: ${data.plazo_meses} meses
 Cuota mensual: Bs. ${data.cuota_mensual}
 Número de contacto: ${sender}
+Sueldo: Bs. ${data.sueldo}
+Deudas: Bs. ${data.cantidad_deuda}
+Monto de pago de deudas: Bs. ${data.monto_pago_deuda}
+Rubro: ${data.rubro}
+Latitud: ${data.latitud}
+Longitud: ${data.longitud}
+Ingreso familiar: Bs. ${data.ingreso_familiar}
+Documento de Custodia: ${data.tipo_documento_custodia}
+  
 `;
 
 export const showVerification = (data) => {

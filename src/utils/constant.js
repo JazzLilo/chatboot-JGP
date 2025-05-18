@@ -65,5 +65,7 @@ export const DOCUMENT_TYPES = [
   { key: 'boleta_pago2', type: 'Boleta Pago 2' },
   { key: 'boleta_pago3', type: 'Boleta Pago 3' },
   { key: 'factura', type: 'Factura' },
-  { key: 'gestora_publica_afp', type: 'Gestora Pública AFP' }
+  { key: 'gestora_publica_afp', type: 'Gestora Pública AFP' },
+  { key: 'custodia', type: 'Custodia' },
+  { key: 'boleta_impuesto', type: 'Boleta Impuesto' },
 ];

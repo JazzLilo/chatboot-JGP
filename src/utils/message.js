@@ -28,3 +28,5 @@ export const messageRequestFileError = (file_name) =>
 export const messageRequestFileCiError = `❌ El numero de CI no es igual al numero de CI en el carnet. Por favor, inténtalo de nuevo.`;
 
 export const messageProcessFileError = '❌ Hubo un error al procesar el archivo. Por favor, inténtalo de nuevo.'
+
+export const messageRequestFileCustodiaError = `❌ El nombre del propietario no coincide con el nombre en el documento de custodia. Por favor, inténtalo de nuevo.`
