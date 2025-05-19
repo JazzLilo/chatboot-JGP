@@ -1,20 +1,13 @@
-FROM node:20-alpine
-
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+FROM node:lts as dependencies
 
 WORKDIR /app
 
 COPY package*.json ./
 COPY src/config/migrate.js ./src/config/migrate.js
 
-RUN npm install --omit=dev && \
-    npm install -g wait-for-it && \
+RUN npm install && \
     mkdir -p \
-        /app/src/solicitudes \
-        /app/src/temp \
-        /app/auth_info_baileys && \
-    chown -R appuser:appgroup /app
-
-USER appuser
+      src/solicitudes \
+      src/temp && \
 
 COPY . .
