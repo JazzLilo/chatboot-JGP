@@ -33,10 +33,7 @@ services:
         condition: service_healthy
     ports:
       - "3002:3002"
-
-    command: >
-      node src/config/migrate.js && 
-      npm run dev"
+    command: sh -c "node src/config/migrate.js && npm run dev"
 
 volumes:
   postgres_data:
