@@ -35,7 +35,6 @@ services:
       - "3002:3002"
 
     command: >
-      sh -c "wait-for-it -t 30 postgres:5432 -- 
       node src/config/migrate.js && 
       npm run dev"
 
