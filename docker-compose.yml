@@ -26,7 +26,8 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/DB_DB_JGP
+      GEMINI_API_KEY=AIzaSyDuD5CJpyrJMuR5-oJ3ICp8_KavKk1Kdx4
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/DB_JGP
       PGHOST: postgres
     depends_on:
       postgres:
