@@ -1,5 +1,4 @@
 import fs from "fs";
-import ExifParser from "exif-parser";
 import fetch from 'node-fetch';
 import { validateDocument, validateName } from './gemini.controller.js';
 

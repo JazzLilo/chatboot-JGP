@@ -11,7 +11,7 @@ import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, me
 //import {  getDocumentPrompt,} from '../utils/conversation.prompts.js';
 import { getDocumentState, documentsFlow, getDocumentPrompt} from '../utils/document.flow.js'
 import { userRetryMessage } from './user.messages.controller.js';
-import {showOptionsDeuda,  CORRECTION_MAP, showVerification  } from '../utils/tramite.constant.js';
+import {showOptionsDeuda,  CORRECTION_MAP  } from '../utils/tramite.constant.js';
 import { parseCurrency, processCapacityEvaluation, processCapacityEvaluationFamiliar,calculateCapacidad, calculateMaxLoanAmount } from '../utils/tramite.helppers.js';
 
 import {  getTramitePrompt,handleTextInput, handleLocationInput, handleNumberInput, handlePlazoInput } from '../utils/tramite.flow.js'

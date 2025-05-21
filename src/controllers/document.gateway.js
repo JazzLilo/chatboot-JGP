@@ -5,14 +5,11 @@ import directoryManager from '../config/directory.js';
 import { logConversation } from '../utils/logger.js';
 import { processDocument } from '../controllers/document.process.controller.js';
 import {
-    getDocumentPrompt,
-    getNextDocument,
     dataFieldAssignment,
     getDocumentDescription
 } from '../utils/conversation.prompts.js';
 import {
     messageRequestFile,
-    messageRequestFileSuccess,
     messageRequestFileError,
     messageProcessFileError,
     messageRequestFileCiError,
