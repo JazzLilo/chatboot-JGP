@@ -8,10 +8,9 @@ import { logConversation } from '../utils/logger.js'
 import { classifyIntent } from '../controllers/gemini.controller.js';
 import fs from "fs";
 import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained, messageMaxRetry } from '../utils/message.js';
-//import {  getDocumentPrompt,} from '../utils/conversation.prompts.js';
-import { getDocumentState, documentsFlow, getDocumentPrompt} from '../utils/document.flow.js'
+import { getDocumentState, documentsFlow, getDocumentMessage} from '../utils/document.flow.js'
 import { userRetryMessage } from './user.messages.controller.js';
-import {showOptionsDeuda,  CORRECTION_MAP, showVerification  } from '../utils/tramite.constant.js';
+import {showOptionsDeuda,  CORRECTION_MAP  } from '../utils/tramite.constant.js';
 import { parseCurrency, processCapacityEvaluation, processCapacityEvaluationFamiliar,calculateCapacidad, calculateMaxLoanAmount } from '../utils/tramite.helppers.js';
 
 import {  getTramitePrompt,handleTextInput, handleLocationInput, handleNumberInput, handlePlazoInput } from '../utils/tramite.flow.js'
@@ -41,7 +40,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
   if (state.startsWith('solicitar_documento_')) {
     const key = state.replace('solicitar_documento_', '');
     userStates[sender].current_document = key;
-    return getDocumentPrompt(key);
+    return getDocumentMessage(key);
   }
 
   switch (state) {
@@ -201,7 +200,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
         userStates[sender].state = getDocumentState(firstKey);
         userStates[sender].current_document = firstKey;
         userStates[sender].retries = 0;
-        return getDocumentPrompt(firstKey);
+        return getDocumentMessage(firstKey);
       } else if (resp === false) {
         userStates[sender].state = "correccion";
         userStates[sender].retries = 0;

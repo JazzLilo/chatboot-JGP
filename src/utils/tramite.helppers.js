@@ -46,11 +46,18 @@ export const processCapacityEvaluationFamiliar = (data, userStates, sender) => {
  * @returns {number|null} - La cuota mensual calculada o null si el plazo no es válido.
  */
 export const calculateMonthlyFee = (monto, meses) => {
-  const valor = tabla_asesor[meses];
-  if (!valor) return null;
-  const resultado = (monto / 1000) * valor;
-  return Math.round(resultado * 100) / 100;
-}
+  const tasaInteresMensual = 0.03;
+
+  if (!monto || !meses || meses <= 0) return null;
+
+  const i = tasaInteresMensual;
+  const n = meses;
+
+  const cuota = (monto * i) / (1 - Math.pow(1 + i, -n));
+
+  return Math.round(cuota * 100) / 100;
+};
+
 
 export const calculateCapacidad = (data) => {
   return (data.sueldo / 2) + (data.monto_pago_deuda || 0)

@@ -1,6 +1,6 @@
-import { MAX_CANCEL_ATTEMPTS, MAX_RETRIES } from '../utils/constant.js'
+import {  MAX_RETRIES } from '../utils/constant.js'
 
-import { userStateVerifyAsalariado, userStateBaned, resetUserState, userStateExededRetryLimit } from '../controllers/user.state.controller.js';
+import { userStateExededRetryLimit } from '../controllers/user.state.controller.js';
 export const userBanedMessage = (userId) => {
 }
 
