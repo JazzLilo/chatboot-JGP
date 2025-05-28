@@ -6,17 +6,5 @@ services:
     image: bot2
     container_name: chatbot
     restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@100.101.113.118:5432/DB_JGP
-      PGHOST: postgres
-    depends_on:
-      postgres:
-        condition: service_healthy
     ports:
       - "3002:3002"
-    command: sh -c "node src/config/migrate.js && npm run dev"
-
-volumes:
-  postgres_data:

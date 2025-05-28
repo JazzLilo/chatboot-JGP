@@ -1,13 +1,11 @@
-FROM node:lts as dependencies
+FROM node:lts
 
 WORKDIR /app
 
-COPY package*.json ./
-COPY src/config/migrate.js ./src/config/migrate.js
-
-RUN npm install && \
-    mkdir -p \
-      src/solicitudes \
-      src/temp && \
-
 COPY . .
+
+RUN npm install
+
+EXPOSE 3002
+
+CMD node src/config/migrate.js && node src/index.js
