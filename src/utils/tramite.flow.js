@@ -32,7 +32,7 @@ export const TRAMITE_FLOW = [
     validation: (input) => {
       const trimmed = input.trim();
       return (
-        trimmed.length >= 3 && /^[a-zA-ZÁÉÍÓÚÑáéíóúñ0-9\s\/\-.,#]+$/g.test(trimmed) && /\D/.test(trimmed)
+        trimmed.length >= 3 && /^[a-zA-ZÁÉÍÓÚÑáéíóúñ0-9\s\/\-.,#:]+$/g.test(trimmed) && /\D/.test(trimmed)
       );
     },
     errorMessage: '❌ Formato inválido. Ejemplo: "Calle Libertad #25, Residencias Valle"'
