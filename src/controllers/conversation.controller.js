@@ -1,6 +1,6 @@
 import { MAX_CANCEL_ATTEMPTS } from '../utils/constant.js'
 import { classifyYesNo, getRandomVariation } from '../config/utils.js';
-import { userStateVerifyAsalariado, userStateBaned, resetUserState} from '../controllers/user.state.controller.js';
+import { userStateVerifyAsalariado, userStateBaned, resetUserState } from '../controllers/user.state.controller.js';
 import { isInApplicationProcess } from '../utils/validate.js';
 import directoryManager from '../config/directory.js';
 import { saveApplicationData } from '../controllers/user.data.controller.js';
@@ -8,14 +8,13 @@ import { logConversation } from '../utils/logger.js'
 import { classifyIntent } from '../controllers/gemini.controller.js';
 import fs from "fs";
 import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained, messageMaxRetry } from '../utils/message.js';
-import { getDocumentState, documentsFlow, getDocumentMessage} from '../utils/document.flow.js'
+import { getDocumentState, documentsFlow, getDocumentMessage } from '../utils/document.flow.js'
 import { userRetryMessage } from './user.messages.controller.js';
-import {showOptionsDeuda,  CORRECTION_MAP  } from '../utils/tramite.constant.js';
-import { parseCurrency, processCapacityEvaluation, processCapacityEvaluationFamiliar,calculateCapacidad, calculateMaxLoanAmount } from '../utils/tramite.helppers.js';
+import { showOptionsDeuda, CORRECTION_MAP, MAX_MONTO } from '../utils/tramite.constant.js';
+import { parseCurrency, processCapacityEvaluation, processCapacityEvaluationFamiliar, calculateCapacidad, calculateMaxLoanAmount } from '../utils/tramite.helppers.js';
 
-import {  getTramitePrompt,handleTextInput, handleLocationInput, handleNumberInput, handlePlazoInput } from '../utils/tramite.flow.js'
+import { getTramitePrompt, handleTextInput, handleLocationInput, handleNumberInput, handlePlazoInput } from '../utils/tramite.flow.js'
 import { get } from 'http';
-
 
 
 export const continueVirtualApplication = async (state, data, sender, userMessage, userStates, prompts) => {
@@ -57,8 +56,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
         userStates[sender].state = "INIT";
         userStates[sender].retries = 0;
         userStates[sender].in_application = false;
-
-        return message ? `${message}\n\n` : `${contentMenu}`;
+        return `${message}\n\n${contentMenu}`;
       } else {
         return userRetryMessage(userStates, sender, `❓ Responda Sí✔️ o No❌.`);
       }
@@ -70,7 +68,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
           return getTramitePrompt("nombre_completo");
         case false:
           resetUserState(userStates, sender);
-          return `❌ Lo sentimos, Usted debe contar con un documento en custodia para inicira e tramite. Puede pasarse por nuestras Sucursales.\n\n ${contentMenu}`;
+          return `❌ Lo sentimos, Usted debe contar con un documento en custodia para iniciar el trámite. Puede pasarse por nuestras Sucursales.\n\n ${contentMenu}`;
         default:
           return `❌ Responda Sí o No`;
       }
@@ -93,12 +91,12 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     case "monto": {
       const val = parseCurrency(userMessage);
       const MIN_MONTO = 0;
-      const MAX_MONTO = data.max_loan_amount || 5000;
+      const MX_MONTO = data.max_loan_amount ? data.max_loan_amount : MAX_MONTO; // Usar constante global
 
-      return handleNumberInput(userStates, sender, data, "monto", "plazo_meses", val, MIN_MONTO, MAX_MONTO);
+      return handleNumberInput(userStates, sender, data, "monto", "plazo_meses", val, MIN_MONTO, MX_MONTO);
     }
     case "plazo_meses": {
-      const meses = parseInt(userMessage);
+      const meses = parseCurrency(userMessage);
       const MIN_PLAZO = 6;
       const MAX_PLAZO = data.allow_extended_term ? 12 : 12;
 
@@ -108,29 +106,10 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       return handleTextInput(userStates, sender, data, "rubro", "sueldo", userMessage.trim());
     }
     case "sueldo": {
-      data.sueldo = parseCurrency(userMessage);
-      userStates[sender].state = "deuda";
-      return getTramitePrompt("deuda");
-    }
-    case "ingreso_extra": {
-      switch (classifyYesNo(userMessage)) {
-        case true:
-          userStates[sender].state = "ingreso_extra_monto";
-          return getTramitePrompt("ingreso_extra_monto");
-        case false:
-          userStates[sender].state = "deuda";
-          return getTramitePrompt("deuda");
-        default:
-          return `❌ Responda Sí o No`;
-      }
-    }
-    case "ingreso_extra_monto": {
       const val = parseCurrency(userMessage);
-      const MIN_MONTO = 0;
-      const MAX_MONTO = 100000;
-
-      return handleNumberInput(userStates, sender, data, "ingreso_extra_monto", "deuda", val, MIN_MONTO, MAX_MONTO);
-
+      const MIN_SUELDO = 0;
+      const MAX_SUELDO = 1000000;
+      return handleNumberInput(userStates, sender, data, "sueldo", "deuda", val, MIN_SUELDO, MAX_SUELDO);
     }
     case "deuda": {
       switch (classifyYesNo(userMessage)) {
@@ -144,10 +123,18 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       }
     }
     case "cantidad_deuda": {
-      return handleNumberInput(userStates, sender, data, "cantidad_deuda", "monto_pago_deuda", userMessage, 0, 100000);
+      const count = parseCurrency(userMessage); 
+      const MIN_DEUDAS = 0;
+      const MAX_DEUDAS = 100;
+
+      return handleNumberInput(userStates, sender, data, "cantidad_deuda", "monto_pago_deuda", count, MIN_DEUDAS, MAX_DEUDAS);
     }
     case "monto_pago_deuda": {
-      data.monto_pago_deuda = parseCurrency(userMessage);
+      const amount = parseCurrency(userMessage);
+      if (isNaN(amount) || amount < 0) {
+        return userRetryMessage(userStates, sender, "❌ Ingrese un monto válido (ej: 1500)");
+      }
+      data.monto_pago_deuda = amount;
       return processCapacityEvaluation(data, userStates, sender);
     }
     case "familiar_asalariado": {
@@ -163,21 +150,25 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       }
     }
     case "sueldo_familiar": {
-      data.ingreso_familiar = parseCurrency(userMessage);
+      const amount = parseCurrency(userMessage);
+      if (isNaN(amount) || amount <= 0) {
+        return userRetryMessage(userStates, sender, "❌ Ingrese un monto válido mayor a cero");
+      }
+      data.ingreso_familiar = amount;
       return processCapacityEvaluationFamiliar(data, userStates, sender);
     }
     case "select_option_deuda": {
-      const option = parseInt(userMessage);
+      const option = parseCurrency(userMessage);
       switch (option) {
         case 1:
-          userStates[sender].adjustmentFlow = 'monto'; 
+          userStates[sender].adjustmentFlow = 'monto';
           userStates[sender].state = "monto";
           return `Ingrese nuevo monto (máximo ${data.max_loan_amount.toFixed(2)} Bs):`;
 
         case 2:
           userStates[sender].adjustmentFlow = 'plazo';
           userStates[sender].state = "plazo_meses";
-          return `Ingrese nuevo plazo (6-12 meses):`;
+          return `Ingrese nuevo plazo (${MIN_PLAZO}-${MAX_PLAZO} meses):`;
 
         case 3:
           userStates[sender].state = "INIT";
@@ -189,7 +180,6 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
           return userRetryMessage(userStates, sender, showOptionsDeuda(data, capacidad, maxLoan));
       }
     }
-
     case "verificacion": {
       const resp = classifyYesNo(userMessage);
       if (resp === true) {
@@ -210,7 +200,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       }
     }
     case "correccion": {
-      const opcion = parseInt(userMessage);
+      const opcion = parseCurrency(userMessage);
       if (![1, 2, 3, 4, 5].includes(opcion)) {
         return userRetryMessage(userStates, sender, `❌ Opción no válida. Ingrese un número del 1 al 7:`);
       }
@@ -218,36 +208,33 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       return `✏️ Ingrese el nuevo valor para ${getTramitePrompt(CORRECTION_MAP[opcion].split('-')[1])}:`;
     }
 
-    case "correccion-nombre_completo":{
+    case "correccion-nombre_completo": {
       return handleTextInput(userStates, sender, data, "nombre_completo", "verificacion", userMessage.trim());
     }
 
-    case "correccion-cedula":{
+    case "correccion-cedula": {
       return handleTextInput(userStates, sender, data, "cedula", "verificacion", userMessage.trim());
     }
 
-    case "correccion-direccion":{
+    case "correccion-direccion": {
       return handleTextInput(userStates, sender, data, "direccion", "verificacion", userMessage.trim());
     }
 
-    case "correccion-email":{
+    case "correccion-email": {
       return handleTextInput(userStates, sender, data, "email", "verificacion", userMessage.trim());
     }
 
-    case "correccion-enlace_maps":{
+    case "correccion-enlace_maps": {
       return handleLocationInput(userStates, sender, data, "enlace_maps", "verificacion", userMessage);
     }
 
-    // Estado final después de recibir todos los documentos
     case "documentos_recibidos": {
       try {
-        // Limpiar archivos temporales después de guardar
         const userTempDir = directoryManager.getPath("temp") + "/" + sender;
         if (fs.existsSync(userTempDir)) {
           fs.rmSync(userTempDir, { recursive: true, force: true });
         }
 
-        // Llamada a la función para guardar los datos de la solicitud
         const saveSuccess = await saveApplicationData(sender, data);
 
         if (saveSuccess) {
@@ -256,17 +243,15 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
           userStates[sender].in_application = false;
           delete userStates[sender].timeout;
 
-          // Enviar mensaje de cierre y reinicio
           const closureMessage = `✅ Todos los documentos han sido recibidos y guardados correctamente. El chatbot se cerrará ahora y se reiniciará en 5 minutos. Por favor, vuelve a contactarnos después de este tiempo.`;
           logConversation(sender, closureMessage, "bot");
 
-          // Programar el reinicio del estado después de 5 minutos
           setTimeout(() => {
             resetUserState(userStates, sender);
             console.log(
               `Estado de usuario ${sender} reiniciado después de 5 minutos.`
             );
-          }, 5 * 60 * 1000); // 5 minutos
+          }, 5 * 60 * 1000); 
 
           return closureMessage;
         } else {
@@ -279,9 +264,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     }
 
     default: {
-      // Correcciones en cascada
       if (state.startsWith("correccion_")) return
-      // Si llegó aquí es un estado desconocido
       return `Ha ocurrido un error inesperado, intente de nuevo o escriba 'cancelar'.`;
     }
   }

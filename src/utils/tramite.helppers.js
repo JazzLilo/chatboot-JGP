@@ -1,7 +1,13 @@
 import { showOptionsDeuda, showVerification } from '../utils/tramite.constant.js'
-import { tabla_asesor } from '../utils/constant.js';
+
 import {  getTramitePrompt } from '../utils/tramite.flow.js'
-export const parseCurrency = (input) => parseFloat(input.replace(/[^0-9.]/g, ""));
+export const parseCurrency = (input) => {
+  const cleaned = input.replace(/[^\d.-]/g, '');
+  
+  const match = cleaned.match(/-?(\d+\.?\d*|\d*\.?\d+)/);
+  
+  return match ? parseFloat(match[0]) : NaN;
+};
 export const validateRange = (value, min, max) => !isNaN(value) && value >= min && value <= max;
 
 /**
