@@ -4,10 +4,7 @@ import { downloadMediaMessage } from "@whiskeysockets/baileys";
 import directoryManager from '../config/directory.js';
 import { logConversation } from '../utils/logger.js';
 import { processDocument } from '../controllers/document.process.controller.js';
-import {
-    dataFieldAssignment,
-    getDocumentDescription
-} from '../utils/conversation.prompts.js';
+
 import {
     messageRequestFile,
     messageRequestFileError,

@@ -22,11 +22,3 @@ Mensaje del usuario: "{message}"
 Responde SOLO con la categoría que mejor corresponda, sin explicaciones adicionales.
 `;
 
-export const map = {
-  1: "correccion_nombre",
-  2: "correccion_cedula",
-  3: "correccion_direccion",
-  4: "correccion_email",
-  5: "correccion_monto",
-  6: "correccion_plazo",
-};
