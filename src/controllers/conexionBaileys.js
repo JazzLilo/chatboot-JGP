@@ -93,7 +93,9 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
       logConversation(id, aviso, "bot");
       return;
     }
-
+    console.log('///////////////////////////////////////////')
+    console.log("Estado del usuario:", userStates[id]);
+    console.log('///////////////////////////////////////////')
 
     // Manejo de documentos durante trámites
     if (userStates[id].in_application && userStates[id].current_document) {
@@ -114,6 +116,10 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
       await documentIngress(userStates, message, sock);
       return;
     }
+
+     console.log('///////////////////////////////////////////')
+    console.log("Estado del usuario:", userStates[id]);
+    console.log('///////////////////////////////////////////')
 
     // Extracción del contenido del mensaje
     const mensaje =
@@ -174,7 +180,7 @@ export const connectToWhatsApp = async (userStates, prompts, handlers) => {
         return;
       }
     }
-
+    
     // Manejo de trámites en progreso
     const enTramite = isInApplicationProcess(userStates, id);
     let respuesta;
