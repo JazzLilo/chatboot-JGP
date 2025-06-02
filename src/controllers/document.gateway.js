@@ -15,7 +15,8 @@ import {
 import { userStateInit } from '../controllers/user.state.controller.js';
 import {
     getDocumentState,
-    getNextDocumentKey
+    getNextDocumentKey,
+    getDocumentMessage 
 } from '../utils/document.flow.js'
 import { userStateExededRetryLimit } from '../controllers/user.state.controller.js';
 
@@ -41,6 +42,7 @@ export const documentIngress = async (userStates, message, sock) => {
         logConversation(id, `Archivo guardado: ${filePath}`, 'bot');
 
         const result = await processDocument(filePath, key, userState.data, userStates, id);
+        console.log(`Resultado procesamiento [${id}]:`, result);
         logConversation(id, `Resultado procesamiento: ${JSON.stringify(result)}`, 'bot');
 
         await handleValidationResult(result, key, userState, userStates, sock, id);
@@ -65,7 +67,7 @@ export const documentIngress = async (userStates, message, sock) => {
     }
 }
 
-function isMediaMessage(message) {
+export function isMediaMessage(message) {
     try {
         const { documentMessage, imageMessage, videoMessage } = message.message || {};
         return Boolean(documentMessage || imageMessage || videoMessage);
@@ -75,7 +77,7 @@ function isMediaMessage(message) {
     }
 }
 
-async function sendRequestFileMessage(sock, id) {
+export async function sendRequestFileMessage(sock, id) {
     try {
         await sock.sendMessage(id, { text: messageRequestFile });
     } catch (error) {
@@ -84,7 +86,7 @@ async function sendRequestFileMessage(sock, id) {
     }
 }
 
-async function downloadAndExtractMedia(message) {
+export async function downloadAndExtractMedia(message) {
     try {
         const buffer = await downloadMediaMessage(message, 'buffer', {});
         const extension = getFileExtension(message);
@@ -95,7 +97,7 @@ async function downloadAndExtractMedia(message) {
     }
 }
 
-async function saveTemporaryFile(buffer, key, extension) {
+export async function saveTemporaryFile(buffer, key, extension) {
     try {
         const tempDir = directoryManager.getPath('temp');
         if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
@@ -110,15 +112,16 @@ async function saveTemporaryFile(buffer, key, extension) {
     }
 }
 
-async function handleValidationResult(result, key, userState, userStates, sock, id) {
+export async function handleValidationResult(result, key, userState, userStates, sock, id) {
     try {
+        console.log(`Manejando resultado de validación [${id}]:`, result);
         const isCIReDocument = userState.current_document === 'foto_ci_re';
         const isCustodiaDocument = userState.current_document === 'custodia';
         const nextKey = getNextDocumentKey(key);
         const isValid = result === 'si';
 
         if (!isValid) {
-            const errorMessage = messageRequestFileError(getDocumentDescription(key));
+            const errorMessage = messageRequestFileError(getDocumentMessage(key));
             return await handleInvalidAttempt(userStates, sock, id, errorMessage);
         }
 
@@ -151,6 +154,9 @@ async function handleValidationResult(result, key, userState, userStates, sock, 
             if (nextKey) {
                 userState.current_document = nextKey;
                 userState.state = getDocumentState(nextKey);
+                await sock.sendMessage(id, {
+                    text: `✅ Documento ${key} validado correctamente.\n ${getDocumentMessage (nextKey)}`
+                });
             } else {
                 userState.state = 'documentos_recibidos';
                 await sock.sendMessage(id, {
@@ -183,7 +189,7 @@ async function handleInvalidAttempt(userStates, sock, id, errorMessage) {
     }
 }
 
-async function handleExceededAttempts(userStates, sock, id) {
+export async function handleExceededAttempts(userStates, sock, id) {
     try {
         userStateExededRetryLimit(userStates, id);
         await sock.sendMessage(id, {
@@ -206,4 +212,41 @@ export function getFileExtension(message) {
         console.error('Error obteniendo extensión de archivo:', error);
         return '.bin'; // Extensión genérica como fallback
     }
+}
+
+export const dataFieldAssignment = (data, documentKey, filePath) => {
+  switch (documentKey) {
+    case "foto_ci_an":
+      data.foto_ci_an = filePath;
+      break;
+    case "foto_ci_re":
+      data.foto_ci_re = filePath;
+      break;
+    case "croquis":
+      data.croquis = filePath;
+      break;
+    case "boleta_pago1":
+      data.boleta_pago1 = filePath;
+      break;
+    case "boleta_pago2":
+      data.boleta_pago2 = filePath;
+      break;
+    case "boleta_pago3":
+      data.boleta_pago3 = filePath;
+      break;
+    case "factura":
+      data.factura = filePath;
+      break;
+    case "gestora_publica_afp":
+      data.gestora_publica_afp = filePath;
+      break;
+    case "custodia":
+      data.custodia = filePath;
+      break;
+    case "boleta_impuesto":
+      data.boleta_impuesto = filePath;
+      break;
+    default:
+      console.warn(`Documento desconocido: ${documentKey}`);
+  }
 }

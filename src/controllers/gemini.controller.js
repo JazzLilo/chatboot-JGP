@@ -9,7 +9,7 @@ export const classifyIntent = async (message) => {
     const promptText = INTENT_CLASSIFIER_PROMPT.replace("{message}", message);
     console.log("PROMPT DE GEMINI", promptText);
     const { text } = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.0-flash-exp",
       contents: [{ parts: [{ text: promptText }] }],
     });
     console.log("RESPUESTA DE GEMINI", text);
@@ -72,7 +72,7 @@ export const getLatLongFromLink = async (link) => {
 export const validateDocument = async (base64Data, mimeType, prompt) => {
   try {
     const { text } = await ai.models.generateContent({
-      model: "gemini-2.0-flash", // Modelo actualizado
+      model: "gemini-2.0-flash-exp", // Modelo actualizado
       contents: [{
         parts: [
           { text: prompt }, // Parte textual (prompt)
@@ -96,7 +96,7 @@ export const validateDocument = async (base64Data, mimeType, prompt) => {
 export const validateName = async (prompt) => {
   try {
     const { text } = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.0-flash-exp",
       contents: [{
         parts: [{ text: prompt + "\nResponde solo con 'true' o 'false' sin comillas." }]
       }]

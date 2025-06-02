@@ -74,11 +74,17 @@ export const calculateCapacidadFamiliar = (data) => {
 }
 
 export const calculateMaxLoanAmount = (capacidadPago, plazoMeses) => {
-  const valor = tabla_asesor[plazoMeses];
-  if (!valor) return null;
-  const resultado = (capacidadPago * 1000) / valor;
-  return Math.round(resultado * 100) / 100;
-}
+  const tasaInteresMensual = 0.03;
+
+  if (!capacidadPago || !plazoMeses || plazoMeses <= 0) return null;
+
+  const i = tasaInteresMensual;
+  const n = plazoMeses;
+
+  const monto = capacidadPago * (1 - Math.pow(1 + i, -n)) / i;
+
+  return Math.round(monto * 100) / 100;
+};
 
 export const saveDataTramiteUser = (userStates, sender, data, state, value, nextState) => {
   data[state] = value;
