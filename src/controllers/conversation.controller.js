@@ -227,42 +227,6 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
     case "correccion-enlace_maps": {
       return handleLocationInput(userStates, sender, data, "enlace_maps", "verificacion", userMessage);
     }
-
-    case "documentos_recibidos": {
-      try {
-        const userTempDir = directoryManager.getPath("temp") + "/" + sender;
-        if (fs.existsSync(userTempDir)) {
-          fs.rmSync(userTempDir, { recursive: true, force: true });
-        }
-
-        const saveSuccess = await saveApplicationData(sender, data);
-
-        if (saveSuccess) {
-          clearTimeout(userStates[sender].timeout);
-          userStates[sender].state = "finished";
-          userStates[sender].in_application = false;
-          delete userStates[sender].timeout;
-
-          const closureMessage = `✅ Todos los documentos han sido recibidos y guardados correctamente. El chatbot se cerrará ahora y se reiniciará en 5 minutos. Por favor, vuelve a contactarnos después de este tiempo.`;
-          logConversation(sender, closureMessage, "bot");
-
-          setTimeout(() => {
-            resetUserState(userStates, sender);
-            console.log(
-              `Estado de usuario ${sender} reiniciado después de 5 minutos.`
-            );
-          }, 5 * 60 * 1000); 
-
-          return closureMessage;
-        } else {
-          return `❌ Hubo un error al guardar tu solicitud. Por favor, intenta nuevamente o contacta con soporte técnico.`;
-        }
-      } catch (error) {
-        console.error("Error al guardar la solicitud:", error);
-        return `❌ Ocurrió un error inesperado al procesar tu solicitud. Por favor, intenta nuevamente o contacta con soporte técnico.`;
-      }
-    }
-
     default: {
       if (state.startsWith("correccion_")) return
       return `Ha ocurrido un error inesperado, intente de nuevo o escriba 'cancelar'.`;
