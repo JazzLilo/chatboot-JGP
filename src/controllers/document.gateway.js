@@ -148,6 +148,9 @@ export async function handleValidationResult(result, key, userState, userStates,
             else {
                 userState.current_document = nextKey;
                 userState.state = getDocumentState(nextKey);
+                await sock.sendMessage(id, {
+                    text: `✅ Documento validado correctamente.\n ${getDocumentMessage(nextKey)}`
+                });
             }
         } else {
             userStates[id].intents = 0;
