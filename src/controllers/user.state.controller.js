@@ -31,19 +31,19 @@ export const userStateVerifyAsalariado = (userStates, sender) => {
             userStates[sender].state = "finished";
             userStates[sender].in_application = false;
             delete userStates[sender].timeout;
-        }, 30 * 60 * 1000),
+        }, 40 * 60 * 1000),
         timeoutFinish: setTimeout(() => {
             userStates[sender].state = "finished";
             userStates[sender].in_application = false;
             delete userStates[sender].timeout;
-        }, 30 * 60 * 1000), // 30 minutos de inactividad
+        }, 40 * 60 * 1000), // 30 minutos de inactividad
         timeoutBan: setTimeout(() => {
             if (userStates[sender].cancelAttempts >= MAX_CANCEL_ATTEMPTS) {
                 userStates[sender].state = "baned";
                 userStates[sender].in_application = false;
             }
             delete userStates[sender].timeoutBan;
-        }, 1 * 60 * 1000),
+        }, 2 * 60 * 1000),
     };
 }
 
@@ -67,7 +67,7 @@ export const userStateBaned = (userStates, sender) => {
         userStates[sender].cancelAttempts = 0;
         resetUserState(userStates, sender);
         console.log(`🔄 Estado del usuario ${sender} reiniciado tras 1 minutos.`);
-    }, 1 * 60 * 1000); 
+    }, 1 * 60 * 1000);
 
 }
 
@@ -95,4 +95,17 @@ export const resetUserState = (userStates, sender, message = null) => {
     delete userStates[sender].documents_order;
     delete userStates[sender].current_document;
     return message ? `${message}\n\n${contentMenu}` : `${contentMenu}`;
+}
+
+export const userStateFinished = (userStates, sender) => {
+    clearTimeout(userStates[sender].timeout);
+    userStates[sender].state = "finished";
+    userStates[sender].in_application = false;
+    delete userStates[sender].timeout;
+    setTimeout(() => {
+        resetUserState(userStates, sender);
+        console.log(
+            `Estado de usuario ${sender} reiniciado después de 5 minutos.`
+        );
+    }, 5 * 60 * 1000);
 }

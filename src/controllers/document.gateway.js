@@ -5,7 +5,7 @@ import directoryManager from '../config/directory.js';
 import { logConversation } from '../utils/logger.js';
 import { processDocument } from '../controllers/document.process.controller.js';
 
-import { userStateVerifyAsalariado, userStateBaned, resetUserState } from '../controllers/user.state.controller.js';
+import { userStateVerifyAsalariado, userStateBaned, resetUserState, userStateFinished } from '../controllers/user.state.controller.js';
 
 import {
     messageRequestFile,
@@ -18,7 +18,8 @@ import { userStateInit } from '../controllers/user.state.controller.js';
 import {
     getDocumentState,
     getNextDocumentKey,
-    getDocumentMessage
+    getDocumentMessage,
+    dataFieldAssignment
 } from '../utils/document.flow.js'
 import { userStateExededRetryLimit } from '../controllers/user.state.controller.js';
 import { saveApplicationData } from '../controllers/user.data.controller.js';
@@ -141,39 +142,7 @@ export async function handleValidationResult(result, key, userState, userStates,
                 return await handleInvalidAttempt(userStates, sock, id, messageRequestFileCustodiaError);
             }
             if (userStates[id].data.tipo_documento_custodia === 'RUAT') {
-                try {
-                    const userTempDir = directoryManager.getPath("temp") + "/" + id;
-                    if (fs.existsSync(userTempDir)) {
-                        fs.rmSync(userTempDir, { recursive: true, force: true });
-                    }
-
-                    const saveSuccess = await saveApplicationData(id, userStates[id].data);
-
-                    if (saveSuccess) {
-                        clearTimeout(userStates[id].timeout);
-                        userStates[id].state = "finished";
-                        userStates[id].in_application = false;
-                        delete userStates[id].timeout;
-
-                        const closureMessage = `✅ Todos los documentos han sido recibidos y guardados correctamente. El chatbot se cerrará ahora y se reiniciará en 5 minutos. Por favor, vuelve a contactarnos después de este tiempo.`;
-                        sock.sendMessage(id, { text: closureMessage });
-                        logConversation(id, closureMessage, "bot");
-
-                        setTimeout(() => {
-                            resetUserState(userStates, id);
-                            console.log(
-                                `Estado de usuario ${id} reiniciado después de 5 minutos.`
-                            );
-                        }, 5 * 60 * 1000);
-
-                        return closureMessage;
-                    } else {
-                        return `❌ Hubo un error al guardar tu solicitud. Por favor, intenta nuevamente o contacta con soporte técnico.`;
-                    }
-                } catch (error) {
-                    console.error("Error al guardar la solicitud:", error);
-                    return `❌ Ocurrió un error inesperado al procesar tu solicitud. Por favor, intenta nuevamente o contacta con soporte técnico.`;
-                }
+                await saveDataUser(userStates, id, sock);
 
             }
             else {
@@ -190,40 +159,7 @@ export async function handleValidationResult(result, key, userState, userStates,
                     text: `✅ Documento validado correctamente.\n ${getDocumentMessage(nextKey)}`
                 });
             } else {
-                try {
-                    const userTempDir = directoryManager.getPath("temp") + "/" + id;
-                    if (fs.existsSync(userTempDir)) {
-                        fs.rmSync(userTempDir, { recursive: true, force: true });
-                    }
-
-                    const saveSuccess = await saveApplicationData(id, data);
-
-                    if (saveSuccess) {
-                        clearTimeout(userStates[id].timeout);
-                        userStates[id].state = "finished";
-                        userStates[id].in_application = false;
-                        delete userStates[id].timeout;
-
-                        const closureMessage = `✅ Todos los documentos han sido recibidos y guardados correctamente. El chatbot se cerrará ahora y se reiniciará en 5 minutos. Por favor, vuelve a contactarnos después de este tiempo.`;
-                        sock.sendMessage(id, { text: closureMessage });
-                        logConversation(id, closureMessage, "bot");
-
-                        setTimeout(() => {
-                            resetUserState(userStates, id);
-                            console.log(
-                                `Estado de usuario ${id} reiniciado después de 5 minutos.`
-                            );
-                        }, 5 * 60 * 1000);
-
-                        return closureMessage;
-                    } else {
-                        return `❌ Hubo un error al guardar tu solicitud. Por favor, intenta nuevamente o contacta con soporte técnico.`;
-                    }
-                } catch (error) {
-                    console.error("Error al guardar la solicitud:", error);
-                    return `❌ Ocurrió un error inesperado al procesar tu solicitud. Por favor, intenta nuevamente o contacta con soporte técnico.`;
-                }
-
+                await saveDataUser(userStates, id, sock);
             }
 
         }
@@ -276,39 +212,27 @@ export function getFileExtension(message) {
     }
 }
 
-export const dataFieldAssignment = (data, documentKey, filePath) => {
-    switch (documentKey) {
-        case "foto_ci_an":
-            data.foto_ci_an = filePath;
-            break;
-        case "foto_ci_re":
-            data.foto_ci_re = filePath;
-            break;
-        case "croquis":
-            data.croquis = filePath;
-            break;
-        case "boleta_pago1":
-            data.boleta_pago1 = filePath;
-            break;
-        case "boleta_pago2":
-            data.boleta_pago2 = filePath;
-            break;
-        case "boleta_pago3":
-            data.boleta_pago3 = filePath;
-            break;
-        case "factura":
-            data.factura = filePath;
-            break;
-        case "gestora_publica_afp":
-            data.gestora_publica_afp = filePath;
-            break;
-        case "custodia":
-            data.custodia = filePath;
-            break;
-        case "boleta_impuesto":
-            data.boleta_impuesto = filePath;
-            break;
-        default:
-            console.warn(`Documento desconocido: ${documentKey}`);
+export async function saveDataUser(userStates, id, sock) {
+    try {
+        const userTempDir = directoryManager.getPath("temp") + "/" + id;
+        if (fs.existsSync(userTempDir)) {
+            fs.rmSync(userTempDir, { recursive: true, force: true });
+        }
+
+        const saveSuccess = await saveApplicationData(id,  userStates[id].data);
+
+        if (saveSuccess) {
+
+            const closureMessage = `✅ Todos los documentos han sido recibidos y guardados correctamente. El chatbot se cerrará ahora y se reiniciará en 5 minutos. Por favor, vuelve a contactarnos después de este tiempo.`;
+            sock.sendMessage(id, { text: closureMessage });
+            logConversation(id, closureMessage, "bot");
+            userStateFinished(userStates, id);
+            return closureMessage;
+        } else {
+            return `❌ Hubo un error al guardar tu solicitud. Por favor, intenta nuevamente o contacta con soporte técnico.`;
+        }
+    } catch (error) {
+        console.error("Error al guardar la solicitud:", error);
+        return `❌ Ocurrió un error inesperado al procesar tu solicitud. Por favor, intenta nuevamente o contacta con soporte técnico.`;
     }
 }
