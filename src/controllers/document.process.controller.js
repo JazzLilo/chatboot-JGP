@@ -26,7 +26,7 @@ export async function processDocument(filePath, documentKey, userData, userState
     case 'foto_ci_an':
     case 'foto_ci_re': {
       // Pedimos JSON con campos ci y name
-      const extractPrompt = `Extrae de esta imagen la cédula de identidad (CI) y el nombre completo en formato JSON { \"ci\": \"...\", \"name\": \"...\" }.`;
+      const extractPrompt = `Extrae de esta imagen la cédula de identidad (CI) y el nombre completo, como obtener el CI si en la imagen detectas una  foto, saca el valor que esta debajo de la foto es es el CI, si no hay un valo debajo del CI, entonces busca en la esquina superior contraria a la foto, si no existe una foto busca el nombre y el CI en la esquina superior izquierda. JSON { \"ci\": \"...\", \"name\": \"...\" }.`;
       const jsonText = await validateDocument(base64Data, mimeType, extractPrompt);
       try {
         extracted = JSON.parse(jsonText);

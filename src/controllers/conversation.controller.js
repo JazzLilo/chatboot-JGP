@@ -10,7 +10,7 @@ import fs from "fs";
 import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained, messageMaxRetry } from '../utils/message.js';
 import { getDocumentState, documentsFlow, getDocumentMessage } from '../utils/document.flow.js'
 import { userRetryMessage } from './user.messages.controller.js';
-import { showOptionsDeuda, CORRECTION_MAP, MAX_MONTO } from '../utils/tramite.constant.js';
+import { showOptionsDeuda, CORRECTION_MAP, MAX_MONTO, MIN_PLAZO } from '../utils/tramite.constant.js';
 import { parseCurrency, processCapacityEvaluation, processCapacityEvaluationFamiliar, calculateCapacidad, calculateMaxLoanAmount } from '../utils/tramite.helppers.js';
 
 import { getTramitePrompt, handleTextInput, handleLocationInput, handleNumberInput, handlePlazoInput } from '../utils/tramite.flow.js'

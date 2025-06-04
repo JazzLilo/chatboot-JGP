@@ -171,7 +171,7 @@ export const insertFileLocation = async (solicitudId, filePath, fileType) => {
             "Factura": "factura",
             "Gestora Pública AFP": "gestora_publica_afp",
             "Custodia": "documento_custodia",
-            "Boleta de Impuesto": "boleta_impuesto"
+            "Boleta Impuesto": "boleta_impuesto"
         };
 
         const columnName = columnMap[fileType];

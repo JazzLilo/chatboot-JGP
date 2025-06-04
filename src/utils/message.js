@@ -25,7 +25,7 @@ export const messageRequestFileSuccess = (file_name) =>
 export const messageRequestFileError = (file_name) =>
   `❌ ${file_name} no es válido o no cumple con el formato requerido. Por favor, inténtalo de nuevo.`;
 
-export const messageRequestFileCiError = `❌ El numero de CI no es igual al numero de CI en el carnet. Por favor, inténtalo de nuevo.`;
+export const messageRequestFileCiError = `❌ El numero de CI no es igual al numero de CI en el carnet. Por favor, envíe la Cédula de identidad (anverso).`;
 
 export const messageProcessFileError = '❌ Hubo un error al procesar el archivo. Por favor, inténtalo de nuevo.'
 

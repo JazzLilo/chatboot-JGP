@@ -81,12 +81,12 @@ export const TRAMITE_FLOW = [
     key: 'rubro',
     label: `¿A qué rubro te dedicas?
 
-1️⃣ Financiera
-2️⃣ Comercial
-3️⃣ Industria
-4️⃣ Salud
-5️⃣ Educación
-6️⃣ Otros
+💰 Financiera  
+🛒 Comercial  
+🏭 Industria  
+🏥 Salud  
+🎓 Educación  
+🌐 Otros
 
 *Escribe el nombre del rubro*`,
     emoji: '💼',

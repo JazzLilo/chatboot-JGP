@@ -27,6 +27,7 @@ export const documentsFlow = [
     mimeType: 'image/jpeg',
     prompt: `Analiza esta imagen y responde únicamente si el anverso de la cédula de identidad boliviana es LEGIBLE y VIGENTE.
 La fecha de hoy es ${dateFormatToday()}.
+
 Para saber si está vigente, compara la fecha de vencimiento de la cédula con la fecha actual: 
 - Si la fecha de vencimiento es posterior a la fecha actual, entonces la cédula es válida.
 - Si ya venció o no es legible, entonces no es válida.
@@ -108,9 +109,9 @@ Responde únicamente con:
     label: 'Documento de custodia',
     emoji: '📜',
     mimeType: 'image/jpeg',
-    prompt: `Analiza si este archivo es un documento de custodia, verifica si es un RUAT o un FOLIO REAL, ambos son documentos Bolivianos.
+    prompt: `Analiza si este archivo si es un RUAT o un FOLIO REAL, ambos son documentos Bolivianos.
 Responde únicamente con:
-"si" o "no" , sin tildes ni comillas.`
+"si" o "no" , sin tildes ni comillas. y si es no dime el porque no.`
   },
   {
     key: 'boleta_impuesto',
