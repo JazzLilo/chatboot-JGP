@@ -1,5 +1,5 @@
-import { showOptionsDeuda, showVerification } from '../utils/tramite.constant.js'
-
+import { showOptionsDeuda, showVerification, showDontGetTramite } from '../utils/tramite.constant.js'
+import { resetUserState } from '../controllers/user.state.controller.js';
 import {  getTramitePrompt } from '../utils/tramite.flow.js'
 export const parseCurrency = (input) => {
   const cleaned = input.replace(/[^\d.-]/g, '');
@@ -21,6 +21,10 @@ export const validateRange = (value, min, max) => !isNaN(value) && value >= min 
 
 export const processCapacityEvaluation = (data, userStates, sender) => {
   const capacidad = calculateCapacidad(data);
+  console.log("Capacidad calculada:", capacidad);
+  if ( capacidad < 0) {
+    return fondos_insuficientes(userStates, sender);
+  }
   data.capacidad = capacidad;
   data.max_loan_amount = calculateMaxLoanAmount(capacidad, data.plazo_meses);
   if (capacidad > data.cuota_mensual) {
@@ -33,6 +37,9 @@ export const processCapacityEvaluation = (data, userStates, sender) => {
 
 export const processCapacityEvaluationFamiliar = (data, userStates, sender) => {
   const capacidad = calculateCapacidadFamiliar(data);
+  if ( capacidad < 0) {
+    return fondos_insuficientes(userStates, sender);
+  }
   data.capacidad = capacidad;
   data.max_loan_amount = calculateMaxLoanAmount(capacidad, data.plazo_meses);
   if (capacidad > data.cuota_mensual) {
@@ -41,6 +48,11 @@ export const processCapacityEvaluationFamiliar = (data, userStates, sender) => {
   }
   userStates[sender].state = "select_option_deuda";
   return showOptionsDeuda(data);
+}
+
+export const fondos_insuficientes = (userStates, sender) => {
+  userStates[sender].state = "fondos_insuficientes";
+  return showDontGetTramite();
 }
 
 
@@ -66,11 +78,11 @@ export const calculateMonthlyFee = (monto, meses) => {
 
 
 export const calculateCapacidad = (data) => {
-  return (data.sueldo / 2) + (data.monto_pago_deuda || 0)
+  return (data.sueldo / 2) - (data.monto_pago_deuda || 0)
 }
 
 export const calculateCapacidadFamiliar = (data) => {
-  return (data.sueldo / 2)  + (data.monto_pago_deuda || 0) + (data.ingreso_familiar / 2)
+  return ((data.sueldo / 2)  - (data.monto_pago_deuda || 0)) + (data.ingreso_familiar / 2)
 }
 
 export const calculateMaxLoanAmount = (capacidadPago, plazoMeses) => {

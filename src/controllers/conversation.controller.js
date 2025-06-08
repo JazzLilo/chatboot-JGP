@@ -10,7 +10,7 @@ import fs from "fs";
 import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained, messageMaxRetry } from '../utils/message.js';
 import { getDocumentState, documentsFlow, getDocumentMessage } from '../utils/document.flow.js'
 import { userRetryMessage } from './user.messages.controller.js';
-import { showOptionsDeuda, CORRECTION_MAP, MAX_MONTO, MIN_PLAZO } from '../utils/tramite.constant.js';
+import { showOptionsDeuda, CORRECTION_MAP, MAX_MONTO, MIN_PLAZO, showDontGetTramite } from '../utils/tramite.constant.js';
 import { parseCurrency, processCapacityEvaluation, processCapacityEvaluationFamiliar, calculateCapacidad, calculateMaxLoanAmount } from '../utils/tramite.helppers.js';
 
 import { getTramitePrompt, handleTextInput, handleLocationInput, handleNumberInput, handlePlazoInput } from '../utils/tramite.flow.js'
@@ -123,7 +123,7 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
       }
     }
     case "cantidad_deuda": {
-      const count = parseCurrency(userMessage); 
+      const count = parseCurrency(userMessage);
       const MIN_DEUDAS = 0;
       const MAX_DEUDAS = 100;
 
@@ -176,9 +176,16 @@ export const continueVirtualApplication = async (state, data, sender, userMessag
 
         default:
           const capacidad = calculateCapacidad(data);
+          if (capacidad > 0) {
+            return showDontGetTramite();
+          }
           const maxLoan = calculateMaxLoanAmount(capacidad, data.plazo_meses);
           return userRetryMessage(userStates, sender, showOptionsDeuda(data, capacidad, maxLoan));
       }
+    }
+    case "fondos_insuficientes":{
+      resetUserState(userStates, sender);
+      return "❌ Lo sentimos, no puedes acceder al trámite. Puedes visitar nuestras sucursales para más información.\n\n" + contentMenu;
     }
     case "verificacion": {
       const resp = classifyYesNo(userMessage);

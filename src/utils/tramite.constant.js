@@ -1,3 +1,5 @@
+import { contentMenu } from "../utils/message.js";
+
 export const MIN_PLAZO = 6;
 export const MAX_PLAZO = 12;
 export const MIN_MONTO = 0;
@@ -50,4 +52,8 @@ export const showOptionsDeuda = (data) => {
 3️⃣ Asesoría presencial
 
 Seleccione una opción:`;
+}
+
+export const showDontGetTramite = () => {
+  return `❌ *No puede acceder al trámite*. \n\n${contentMenu}`
 }
