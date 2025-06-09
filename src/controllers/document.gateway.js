@@ -136,14 +136,13 @@ export async function handleValidationResult(result, key, userState, userStates,
 
         if (isCustodiaDocument) {
             console.log("userStates[id].data.tipo_documento_custodia", userStates[id].matches);
-            /*if (!userStates[id].matches.nameMatch) {
+            if (!userStates[id].matches.nameMatch) {
                 userStates[id].current_document = 'custodia';
                 userStates[id].state = getDocumentState('custodia');
                 return await handleInvalidAttempt(userStates, sock, id, messageRequestFileCustodiaError);
-            }*/
+            }
             if (userStates[id].data.tipo_documento_custodia === 'RUAT') {
                 await saveDataUser(userStates, id, sock);
-
             }
             else {
                 userState.current_document = nextKey;
