@@ -3,7 +3,7 @@ import { showOptionsDeuda, showVerification, showDontGetTramite } from '../utils
 import { getTramitePrompt } from '../utils/tramite.flow.js'
 import { calculateCapacidad, calculateCapacidadFamiliar, calculateMaxLoanAmount } from '../utils/tramite.calculations.js';
 import { resetUserState } from '../controllers/user.state.controller.js';
-import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained, messageExceededRetries} from '../utils/message.js';
+import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained} from '../utils/message.js';
 
 export const processCapacityEvaluation = (data, userStates, sender) => {
   const capacidad = calculateCapacidad(data);

@@ -232,11 +232,6 @@ export const getNextTramiteKey = (currentKey, data) => {
   return null;
 };
 
-export const getGenericName = (key) => {
-  const step = getTramiteStep(key);
-  return step ? step.genericName : '';
-};
-
 // Handlers
 export const handleTextInput = (userStates, sender, data, state, nextState, input, maxValue = 0) => {
   if (!validateTramiteInput(state, input, maxValue)) {
