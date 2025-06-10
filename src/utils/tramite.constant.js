@@ -43,8 +43,6 @@ En caso de estar de acuerdo, envié (si/no) para continuar ...`;
 
 
 export const showOptionsDeuda = (data) => {
-  //const capacidad = calculateCapacidad(data);
-  //#const maxLoan = calculateMaxLoanAmount(capacidad, data.plazo_meses);
   
   return `⚠️ *Ajuste necesario*\n
 • Capacidad de pago: Bs${data.capacidad}
