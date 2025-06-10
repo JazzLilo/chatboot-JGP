@@ -5,3 +5,4 @@ export const sanitizeFilename = (name) => {
 export const sanitizeMessage = (text) => {
   return text.replace(/\n/g, ' ').substring(0, 1000);
 };
+

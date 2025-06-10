@@ -1,6 +1,8 @@
 import { MIN_PLAZO, MAX_PLAZO, MIN_MONTO, MAX_MONTO, showVerification } from '../utils/tramite.constant.js';
-import { saveDataTramiteUser, validateRange, calculateMonthlyFee, processCapacityEvaluation } from '../utils/tramite.helppers.js';
-import { userRetryMessage } from '../controllers/user.messages.controller.js';
+import { saveDataTramiteUser, processCapacityEvaluation } from '../utils/tramite.helppers.js';
+import { calculateMonthlyFee } from '../utils/tramite.calculations.js';
+import { userRetryMessage } from '../utils/user.intents.messages.js';
+import { validateRange } from '../utils/tramite.validations.js';
 
 export const TRAMITE_FLOW = [
   {

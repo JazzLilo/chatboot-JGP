@@ -37,15 +37,3 @@ export const getLatLongFromLink = async (link) =>  {
   return null;
 }
 
-import { contentMenu } from '../utils/message.js';
-export const exededRetryLimit = (userStates, sender) => {
-  if (userStates[sender].retries >= 3) {
-            userStates[sender].state = "baned";
-            userStates[sender].in_application = false;
-            delete userStates[sender].timeout;
-            delete userStates[sender].timeoutFinish;
-            delete userStates[sender].timeoutBan;
-            delete userStates[sender].retries;
-            return `❌ Demasiados intentos inválidos. Por favor, inicie el trámite nuevamente.\n\n${contentMenu}`;
-    }
-}

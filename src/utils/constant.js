@@ -1,4 +1,6 @@
 "use strict";
+export const MAX_CANCEL_ATTEMPTS = 3;
+export const MAX_RETRIES = 3;
 
 export const validIntents = [
   "saludo",
@@ -14,9 +16,6 @@ export const validIntents = [
   "cancelar",
 ];
 
-
-export const MAX_CANCEL_ATTEMPTS = 3;
-export const MAX_RETRIES = 3;
 
 export const DOCUMENT_TYPES = [
   { key: 'foto_ci_an', type: 'Foto CI Anverso' },

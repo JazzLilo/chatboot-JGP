@@ -1,14 +1,12 @@
 import { MAX_CANCEL_ATTEMPTS } from '../utils/constant.js'
 import { getRandomVariation } from '../config/utils.js';
-import { userStateVerifyAsalariado, userStateBaned, resetUserState } from '../controllers/user.state.controller.js';
+import { userStateVerifyAsalariado, userStateBaned} from '../controllers/user.state.controller.js';
 import { isInApplicationProcess } from '../utils/validate.js';
 
 import { logConversation } from '../utils/logger.js'
 import { classifyIntent } from '../controllers/gemini.controller.js';
 
-import { contentMenu, messageCancel, messageCancelFull, messageCancelSuccess, messageNotTrained, messageMaxRetry } from '../utils/message.js';
-
-
+import { contentMenu, messageCancelFull, messageCancel, messageMaxRetry } from '../utils/message.js';
 
 import {
   handleInitialChecks,
@@ -16,12 +14,14 @@ import {
   handleCorrections
 } from '../controllers/tramite.controller.js';
 
+import { handleCancel } from '../utils/tramite.helppers.js';
+
 export const continueVirtualApplication = async (state, data, sender, userMessage, userStates, prompts) => {
-  // Límite de cancelaciones
+
   if (userStates[sender].cancelAttempts >= MAX_CANCEL_ATTEMPTS) {
     console.log(`Usuario ${sender} ha alcanzado el límite de intentos de cancelación.`);
     userStateBaned(userStates, sender);
-    return `❌ Has alcanzado el límite de intentos de cancelación. Intenta nuevamente en unos minutos.`;
+    return `${messageCancel}`;
   }
 
   const cancelHandled = handleInitialChecks(userMessage, sender, userStates);
@@ -88,23 +88,7 @@ export const generateResponse = async (intent, userMessage, sender, prompts, use
   return finalResponse;
 };
 
-// ------------ FUNCIÓN PARA MANEJAR LA CANCELACIÓN -----------
-export const handleCancel = async (sender, userStates) => {
-  console.log(`Manejo de cancelación para el usuario: ${sender}`);
-  if (!userStates[sender]) return `${messageNotTrained} \n\n${contentMenu}`;
 
-  const { cancelAttempts } = userStates[sender];
-
-  console.log(`Intentos de cancelación: ${cancelAttempts}`);
-  //if (cancelAttempts) userStates[sender].cancelAttempts = 0;
-  const cancel_count_temp = userStates[sender].cancelAttempts += 1;
-  if (cancelAttempts > MAX_CANCEL_ATTEMPTS) return messageCancel;
-  userStates[sender].timeout
-  resetUserState(userStates, sender, messageCancelSuccess);
-  userStates[sender].cancelAttempts = cancel_count_temp;
-  console.log(`Estado de usuario ${sender} reiniciado después de ${MAX_CANCEL_ATTEMPTS} intentos de cancelación, cantidad de intentos ${userStates[sender].cancelAttempts}.`);
-  return `${messageCancelFull} \n\n${contentMenu}`;
-}
 
 // ------------ FUNCIÓN CENTRALIZADA PARA MANEJO DE MENSAJES -----------
 export const handleUserMessage = async (sender, message, prompts, userStates) => {

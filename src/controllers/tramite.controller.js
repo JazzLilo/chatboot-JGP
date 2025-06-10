@@ -5,18 +5,18 @@ import directoryManager from '../config/directory.js';
 import fs from "fs";
 import { contentMenu } from '../utils/message.js';
 import { getDocumentState, documentsFlow, getDocumentMessage } from '../utils/document.flow.js'
-import { userRetryMessage } from './user.messages.controller.js';
-import { showOptionsDeuda, CORRECTION_MAP, MAX_MONTO, MIN_PLAZO, showDontGetTramite } from '../utils/tramite.constant.js';
-import { parseCurrency, processCapacityEvaluation, processCapacityEvaluationFamiliar, calculateCapacidad, calculateMaxLoanAmount } from '../utils/tramite.helppers.js';
-
+import { userRetryMessage } from '../utils/user.intents.messages.js';
+import { showOptionsDeuda, CORRECTION_MAP, MIN_MONTO, MAX_MONTO, MIN_PLAZO, MAX_PLAZO, MIN_SUELDO, MAX_SUELDO, MIN_DEUDAS, MAX_DEUDAS ,showDontGetTramite, showChangeData } from '../utils/tramite.constant.js';
+import { processCapacityEvaluation, processCapacityEvaluationFamiliar, handleCancel } from '../utils/tramite.helppers.js';
+import { parseCurrency } from '../utils/tramite.validations.js';
+import { calculateCapacidad, calculateMaxLoanAmount } from '../utils/tramite.calculations.js';
 import { getTramitePrompt, handleTextInput, handleLocationInput, handleNumberInput, handlePlazoInput } from '../utils/tramite.flow.js'
-
+import {messageCancelSuccess, messagePrestamosAsalariado, meesageRespondaSioNo, messageCustodia,messageMontoValido, messageSaldoInsuficiente} from '../utils/message.js';
 
 export const handleInitialChecks = (userMessage, sender, userStates) => {
     if (typeof userMessage !== "object" && userMessage.toLowerCase().includes("cancelar")) {
         handleCancel(sender, userStates);
-        console.log('Cancelación exitosa', userStates);
-        return `✅ Has cancelado tu solicitud. Puedes iniciar nuevamente el trámite en cualquier momento.\n\n${contentMenu}`;
+        return `${messageCancelSuccess}\n\n${contentMenu}`;
     }
     return null;
 };
@@ -33,13 +33,13 @@ export const handleStateFlow = (state, data, sender, userMessage, userStates, pr
                 userStates[sender].retries = 0;
                 return getTramitePrompt("documento_custodia");
             } else if (respuesta === false) {
-                const message = `❌ Lo sentimos, por ahora solo prestamos para asalariados. Aquí tienes más información:\n\n${getRandomVariation(prompts["requisitos"])}`;
+                const message = `${messagePrestamosAsalariado}\n\n${getRandomVariation(prompts["requisitos"])}`;
                 userStates[sender].state = "INIT";
                 userStates[sender].retries = 0;
                 userStates[sender].in_application = false;
                 return `${message}\n\n${contentMenu}`;
             } else {
-                return userRetryMessage(userStates, sender, `❓ Responda Sí✔️ o No❌.`);
+                return userRetryMessage(userStates, sender, `${meesageRespondaSioNo}`);
             }
         }
         case "documento_custodia": {
@@ -49,9 +49,9 @@ export const handleStateFlow = (state, data, sender, userMessage, userStates, pr
                     return getTramitePrompt("nombre_completo");
                 case false:
                     resetUserState(userStates, sender);
-                    return `❌ Lo sentimos, Usted debe contar con un documento en custodia para iniciar el trámite. Puede pasarse por nuestras Sucursales.\n\n ${contentMenu}`;
+                    return `${messageCustodia}\n\n ${contentMenu}`;
                 default:
-                    return `❌ Responda Sí o No`;
+                    return `${meesageRespondaSioNo}`;
             }
         }
         case "nombre_completo": {
@@ -70,17 +70,13 @@ export const handleStateFlow = (state, data, sender, userMessage, userStates, pr
             return handleTextInput(userStates, sender, data, "email", "monto", userMessage.trim());
         }
         case "monto": {
-            const val = parseCurrency(userMessage);
-            const MIN_MONTO = 0;
-            const MX_MONTO = data.max_loan_amount ? data.max_loan_amount : MAX_MONTO; // Usar constante global
+            const val = parseCurrency(userMessage);            
+            const MX_MONTO = data.max_loan_amount ? data.max_loan_amount : MAX_MONTO; 
 
             return handleNumberInput(userStates, sender, data, "monto", "plazo_meses", val, MIN_MONTO, MX_MONTO);
         }
         case "plazo_meses": {
             const meses = parseCurrency(userMessage);
-            const MIN_PLAZO = 6;
-            const MAX_PLAZO = data.allow_extended_term ? 12 : 12;
-
             return handlePlazoInput(userStates, sender, data, "plazo_meses", "rubro", meses, MIN_PLAZO, MAX_PLAZO);
         }
         case "rubro": {
@@ -88,8 +84,7 @@ export const handleStateFlow = (state, data, sender, userMessage, userStates, pr
         }
         case "sueldo": {
             const val = parseCurrency(userMessage);
-            const MIN_SUELDO = 0;
-            const MAX_SUELDO = 1000000;
+            
             return handleNumberInput(userStates, sender, data, "sueldo", "deuda", val, MIN_SUELDO, MAX_SUELDO);
         }
         case "deuda": {
@@ -100,20 +95,17 @@ export const handleStateFlow = (state, data, sender, userMessage, userStates, pr
                 case false:
                     return processCapacityEvaluation(data, userStates, sender);
                 default:
-                    return `❌ Responda Sí o No`;
+                    return `${meesageRespondaSioNo}`;
             }
         }
         case "cantidad_deuda": {
             const count = parseCurrency(userMessage);
-            const MIN_DEUDAS = 0;
-            const MAX_DEUDAS = 100;
-
             return handleNumberInput(userStates, sender, data, "cantidad_deuda", "monto_pago_deuda", count, MIN_DEUDAS, MAX_DEUDAS);
         }
         case "monto_pago_deuda": {
             const amount = parseCurrency(userMessage);
             if (isNaN(amount) || amount < 0) {
-                return userRetryMessage(userStates, sender, "❌ Ingrese un monto válido (ej: 1500)");
+                return userRetryMessage(userStates, sender, messageMontoValido);
             }
             data.monto_pago_deuda = amount;
             return processCapacityEvaluation(data, userStates, sender);
@@ -127,13 +119,13 @@ export const handleStateFlow = (state, data, sender, userMessage, userStates, pr
                     userStates[sender].state = "select_option_deuda";
                     return showOptionsDeuda(data);
                 default:
-                    return `❌ Responda Sí o No`;
+                    return `${meesageRespondaSioNo}`;
             }
         }
         case "sueldo_familiar": {
             const amount = parseCurrency(userMessage);
             if (isNaN(amount) || amount <= 0) {
-                return userRetryMessage(userStates, sender, "❌ Ingrese un monto válido mayor a cero");
+                return userRetryMessage(userStates, sender, messageMontoValido);
             }
             data.ingreso_familiar = amount;
             return processCapacityEvaluationFamiliar(data, userStates, sender);
@@ -166,7 +158,7 @@ export const handleStateFlow = (state, data, sender, userMessage, userStates, pr
         }
         case "fondos_insuficientes": {
             resetUserState(userStates, sender);
-            return "❌ Lo sentimos, no puedes acceder al trámite. Puedes visitar nuestras sucursales para más información.\n\n" + contentMenu;
+            return messageSaldoInsuficiente+"\n\n" + contentMenu;
         }
         case "verificacion": {
             const resp = classifyYesNo(userMessage);
@@ -182,7 +174,7 @@ export const handleStateFlow = (state, data, sender, userMessage, userStates, pr
             } else if (resp === false) {
                 userStates[sender].state = "correccion";
                 userStates[sender].retries = 0;
-                return `🔄 ¿Qué dato deseas corregir?\n1️⃣ Nombre\n2️⃣ Cédula\n3️⃣ Dirección\n4️⃣ Email\n5️⃣Ubicacion Compartida  \n(Escribe el número de la opción o 'cancelar' para terminar.)`;
+                return showChangeData();
             } else {
                 return `❓ Responda Sí✔️ o No❌.`;
             }

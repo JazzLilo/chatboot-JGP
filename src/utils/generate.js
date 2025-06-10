@@ -20,25 +20,3 @@ Ingreso familiar: Bs. ${data.ingreso_familiar}
 Documento de Custodia: ${data.tipo_documento_custodia}
   
 `;
-
-export const showVerification = (data) => {
-  return `📋 *Verifique los datos:*
-- 1️⃣ *Nombre:* ${data.nombre_completo}
-- 2️⃣ *Cédula:* ${data.cedula}
-- 3️⃣ *Dirección:* ${data.direccion}
-- 4️⃣ *Email:* ${data.email}
-- 5️⃣ *Monto:* Bs. ${data.monto}
-- 6️⃣ *Plazo:* ${data.plazo_meses} meses
-- 🔲 *Cuota:* Bs. ${data.cuota_mensual}
-
-¿Son correctos? (Sí/No)`;
-}
-
-export const showValidationCuota = (data) => {
-  return `📋 *Verifique los datos:*
-- 1️⃣*Monto:* Bs. ${data.monto}
-- 2️⃣*Plazo:* ${data.plazo_meses} meses
-- 3️⃣*Cuota:* Bs. ${data.cuota_mensual}
-
-En caso de estar de acuerdo, envié (si/no) para continuar ...`; 
-}

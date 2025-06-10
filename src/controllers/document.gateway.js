@@ -5,7 +5,7 @@ import directoryManager from '../config/directory.js';
 import { logConversation } from '../utils/logger.js';
 import { processDocument } from '../controllers/document.process.controller.js';
 
-import { userStateVerifyAsalariado, userStateBaned, resetUserState, userStateFinished } from '../controllers/user.state.controller.js';
+import { userStateFinished } from '../controllers/user.state.controller.js';
 
 import {
     messageRequestFile,
