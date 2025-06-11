@@ -5,7 +5,6 @@ import { readFile } from 'fs/promises';
 import { PORT } from './config/index.js';
 import { connectToWhatsApp } from './controllers/conexionBaileys.js'
 import indexRouter from './routes/index.routes.js'
-//import { continueVirtualApplication, generateResponse,  handleUserMessage, handleVirtualApplication } from './controllers/conversation.controller.js'
 
 dotenv.config();
 

@@ -5,6 +5,14 @@ import {
 } from "@whiskeysockets/baileys";
 import { handleIncomingMessage } from "../controllers/message.controller.js";
 
+/**
+ * Establece la conexión con WhatsApp y configura los eventos de conexión
+ * y recepción de mensajes.
+ * @param {Object} userStates - Estados de los usuarios
+ * @param {Object} prompts - Prompts para las respuestas
+ * @param {Object} handlers - Controladores para los eventos
+ * @returns {Promise<import("@whiskeysockets/baileys").WAConnection>} - Conexión establecida
+ */
 export const connectToWhatsApp = async (userStates, prompts, handlers) => {
   console.log("Iniciando conexión con WhatsApp...");
 
