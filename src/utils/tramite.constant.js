@@ -1,7 +1,13 @@
+import { contentMenu } from "../utils/message.js";
+
 export const MIN_PLAZO = 6;
 export const MAX_PLAZO = 12;
 export const MIN_MONTO = 0;
 export const MAX_MONTO = 5000;
+export const MIN_SUELDO = 0;
+export const MAX_SUELDO = 1000000;
+export const MIN_DEUDAS = 0;
+export const MAX_DEUDAS = 100;
 
 export const CORRECTION_MAP = {
   1: 'correccion-nombre_completo',
@@ -37,8 +43,6 @@ En caso de estar de acuerdo, envié (si/no) para continuar ...`;
 
 
 export const showOptionsDeuda = (data) => {
-  //const capacidad = calculateCapacidad(data);
-  //#const maxLoan = calculateMaxLoanAmount(capacidad, data.plazo_meses);
   
   return `⚠️ *Ajuste necesario*\n
 • Capacidad de pago: Bs${data.capacidad}
@@ -50,4 +54,11 @@ export const showOptionsDeuda = (data) => {
 3️⃣ Asesoría presencial
 
 Seleccione una opción:`;
+}
+
+export const showChangeData = () => {
+  return `🔄 ¿Qué dato deseas corregir?\n1️⃣ Nombre\n2️⃣ Cédula\n3️⃣ Dirección\n4️⃣ Email\n5️⃣Ubicacion Compartida  \n(Escribe el número de la opción o 'cancelar' para terminar.)`;
+}
+export const showDontGetTramite = () => {
+  return `❌ *No puede acceder al trámite*. \n\n${contentMenu}`
 }

@@ -1,10 +1,13 @@
 import { MIN_PLAZO, MAX_PLAZO, MIN_MONTO, MAX_MONTO, showVerification } from '../utils/tramite.constant.js';
-import { saveDataTramiteUser, validateRange, calculateMonthlyFee, processCapacityEvaluation } from '../utils/tramite.helppers.js';
-import { userRetryMessage } from '../controllers/user.messages.controller.js';
+import { saveDataTramiteUser, processCapacityEvaluation } from '../utils/tramite.helppers.js';
+import { calculateMonthlyFee } from '../utils/tramite.calculations.js';
+import { userRetryMessage } from '../utils/user.intents.messages.js';
+import { validateRange } from '../utils/tramite.validations.js';
 
 export const TRAMITE_FLOW = [
   {
     key: 'documento_custodia',
+    genericName: 'Documento de custodia',
     label: '¿Cuentas con un documento de custodia? (Inmueble o de vehiculo) *Ten en cuenta que este tiene que estar a tu nombre* (Sí/No)',
     emoji: '📄',
     validation: (input) => ['sí', 'si', 'no', 's', 'n'].includes(input.toLowerCase()),
@@ -13,6 +16,7 @@ export const TRAMITE_FLOW = [
   // Datos personales
   {
     key: 'nombre_completo',
+    genericName: 'Nombre completo',
     label: 'Nombre completo',
     emoji: '👤',
     validation: (input) => /^[a-zA-ZÁÉÍÓÚÑáéíóúñ0-9\s]{5,}$/g.test(input.trim()) && /\D/.test(input.trim()),
@@ -20,6 +24,7 @@ export const TRAMITE_FLOW = [
   },
   {
     key: 'cedula',
+    genericName: 'Cédula de identidad',
     label: 'Número de cédula de identidad',
     emoji: '🆔',
     validation: (input) => /^\d{6,10}$/.test(input),
@@ -27,6 +32,7 @@ export const TRAMITE_FLOW = [
   },
   {
     key: 'direccion',
+    genericName: 'Dirección de domicilio',
     label: 'Dirección de domicilio (ej: Av. Principal #123, Urbanización)',
     emoji: '🏠',
     validation: (input) => {
@@ -41,6 +47,7 @@ export const TRAMITE_FLOW = [
   },
   {
     key: 'enlace_maps',
+    genericName: 'Enlace de ubicación en Google Maps',
     label: 'Comparte tu ubicación (o escribe *omitir*)',
     emoji: '🗺️',
     validation: (input) =>
@@ -50,6 +57,7 @@ export const TRAMITE_FLOW = [
   },
   {
     key: 'email',
+    genericName: 'Correo electrónico',
     label: 'Correo electrónico',
     emoji: '📧',
     validation: (input) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input),
@@ -59,6 +67,7 @@ export const TRAMITE_FLOW = [
   // Datos del préstamo
   {
     key: 'monto',
+    genericName: 'Monto del préstamo',
     label: `Monto a solicitar (entre ${MIN_MONTO} y ${MAX_MONTO} Bs)`,
     emoji: '💵',
     validation: (input, maxMonto) => {
@@ -68,6 +77,7 @@ export const TRAMITE_FLOW = [
   },
   {
     key: 'plazo_meses',
+    genericName: 'Plazo del préstamo',
     label: `Plazo en meses (entre ${MIN_PLAZO} y ${MAX_PLAZO} meses)`,
     emoji: '📅',
     validation: (input) => {
@@ -79,6 +89,7 @@ export const TRAMITE_FLOW = [
   // Situación financiera
   {
     key: 'rubro',
+    genericName: 'Rubro de actividad económica',
     label: `¿A qué rubro te dedicas?
 
 💰 Financiera  
@@ -95,6 +106,7 @@ export const TRAMITE_FLOW = [
   },
   {
     key: 'sueldo',
+    genericName: 'Sueldo',
     label: '¿Cuánto de sueldos percibes al mes?',
     emoji: '💵',
     validation: (input) => {
@@ -104,6 +116,7 @@ export const TRAMITE_FLOW = [
   },
   {
     key: 'ingreso_extra',
+    genericName: 'Ingreso adicional',
     label: '¿Recibe ingresos adicionales? (Sí/No)',
     emoji: '💰',
     validation: (input) => ['sí', 'si', 'no', 's', 'n'].includes(input.toLowerCase()),
@@ -111,6 +124,7 @@ export const TRAMITE_FLOW = [
   },
   {
     key: 'ingreso_extra_monto',
+    genericName: 'Monto de ingresos adicionales',
     label: 'Monto de ingresos adicionales mensuales:',
     emoji: '💰',
     skipCondition: (data) => data.ingreso_extra?.toLowerCase() === 'no',
@@ -121,6 +135,7 @@ export const TRAMITE_FLOW = [
   },
   {
     key: 'deuda',
+    genericName: 'Deudas financieras',
     label: '¿Tiene deudas financieras? (Sí/No)',
     emoji: '💳',
     validation: (input) => ['sí', 'si', 'no', 's', 'n'].includes(input.toLowerCase()),
@@ -128,6 +143,7 @@ export const TRAMITE_FLOW = [
   },
   {
     key: 'cantidad_deuda',
+    genericName: 'Cantidad de deudas financieras',
     label: '¿Cuántas deudas financieras tiene?',
     emoji: '💳',
     validation: (input) => {
@@ -138,6 +154,7 @@ export const TRAMITE_FLOW = [
   },
   {
     key: 'monto_pago_deuda',
+    genericName: 'Monto de pago de deudas',
     label: '¿Cuánto es lo que cancela al mes?',
     emoji: '💳',
     skipCondition: (data) => data.deuda?.toLowerCase() === 'no',
@@ -148,6 +165,7 @@ export const TRAMITE_FLOW = [
   },
   {
     key: 'familiar_asalariado',
+    genericName: 'Ingreso familiar asalariado',
     label: '¿Tiene algun ingreso familiar que sea asalariado? (Sí/No)',
     emoji: '👨‍👩‍👧‍👦',
     validation: (input) => ['sí', 'si', 'no', 's', 'n'].includes(input.toLowerCase()),
@@ -155,6 +173,7 @@ export const TRAMITE_FLOW = [
   },
   {
     key: 'sueldo_familiar',
+    genericName: 'Sueldo familiar',
     label: '¿Cuanto es lo que percibe al mensual?',
     emoji: '👨‍👩‍👧‍👦',
     validation: (input) => {
@@ -163,7 +182,7 @@ export const TRAMITE_FLOW = [
     errorMessage: () => '❌ Ingrese un monto válido mayor a cero'
   },
   {
-    key: 'verificacion',
+    key: 'verificacion',    
     label: 'Verifique sus datos',
     emoji: '✅'
   },
